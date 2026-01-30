@@ -110,49 +110,6 @@ figma-mcp-test/
 Each folder is self-contained with `index.html`, `styles.css`, and `script.js`.
 
 
-### Navigation Links to Add:
-
-1. **Landing Page** (`mindspace-landing-page/index.html`):
-   ```javascript
-   // "Get Started" button should link to:
-   window.location.href = '../signup-page/index.html';
-   ```
-
-2. **Signup Page** (`signup-page/index.html`):
-   ```javascript
-   // After successful signup:
-   window.location.href = '../auth-pages/login-page/login.html';
-   ```
-
-3. **Login Page** (`auth-pages/login-page/login.js`):
-   ```javascript
-   // After successful login:
-   window.location.href = '../language-page/language.html';
-   ```
-
-4. **Language Page** (`auth-pages/language-page/language.js`):
-   ```javascript
-   // After language selection:
-   window.location.href = '../../terms-page/index.html';
-   ```
-
-5. **Terms Page** (`terms-page/script.js`):
-   ```javascript
-   // After accepting terms:
-   window.location.href = '../user-info-page/index.html';
-   ```
-
-6. **User Info Page** (`user-info-page/script.js`):
-   ```javascript
-   // After submitting information:
-   window.location.href = '../screening-page/index.html';
-   ```
-
-7. **Screening Page** (`screening-page/script.js`):
-   ```javascript
-   // After completing assessment:
-   window.location.href = '/screening/anxiety'; // Next assessment
-   ```
 
 ## 🔌 Backend Integration
 
