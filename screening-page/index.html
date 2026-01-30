@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mental Health Screening - Depression Assessment</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <span class="breadcrumb">Screening Page</span>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Section Title -->
+            <h1 class="section-title">1. Depression :</h1>
+
+            <!-- Screening Form -->
+            <form class="screening-form" id="screeningForm">
+
+                <!-- Question 1 -->
+                <div class="question-block">
+                    <p class="question-text">
+                        Q.1: In the last 2 weeks, how often did you feel sad, unhappy, or like crying, even when nothing bad happened?
+                    </p>
+                    <div class="options-group">
+                        <label class="option">
+                            <input type="radio" name="q1" value="0" required>
+                            <span class="option-label">0 = Not at all</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="q1" value="1">
+                            <span class="option-label">1 = A little</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="q1" value="2">
+                            <span class="option-label">Many days</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="q1" value="3">
+                            <span class="option-label">Almost every day</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Question 2 -->
+                <div class="question-block">
+                    <p class="question-text">
+                        Q.2: How often did you feel that things you usually enjoy (games, drawing, friends, TV, sports) were not fun anymore?
+                    </p>
+                    <div class="options-group">
+                        <label class="option">
+                            <input type="radio" name="q2" value="0" required>
+                            <span class="option-label">0 = Not at all</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="q2" value="1">
+                            <span class="option-label">1 = A little</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="q2" value="2">
+                            <span class="option-label">Many days</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="q2" value="3">
+                            <span class="option-label">Almost every day</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Question 3 -->
+                <div class="question-block">
+                    <p class="question-text">
+                        Q.3: How often did you have trouble sleeping, like: • sleeping too little • sleeping too much • waking up tired
+                    </p>
+                    <div class="options-group">
+                        <label class="option">
+                            <input type="radio" name="q3" value="0" required>
+                            <span class="option-label">0 = Not at all</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="q3" value="1">
+                            <span class="option-label">1 = A little</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="q3" value="2">
+                            <span class="option-label">Many days</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="q3" value="3">
+                            <span class="option-label">Almost every day</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Question 4 -->
+                <div class="question-block">
+                    <p class="question-text">
+                        Q.4: How often did you feel very tired or low on energy, even after resting or sleeping?
+                    </p>
+                    <div class="options-group">
+                        <label class="option">
+                            <input type="radio" name="q4" value="0" required>
+                            <span class="option-label">0 = Not at all</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="q4" value="1">
+                            <span class="option-label">1 = A little</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="q4" value="2">
+                            <span class="option-label">Many days</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="q4" value="3">
+                            <span class="option-label">Almost every day</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="form-actions">
+                    <button type="button" class="btn btn-back" id="backBtn">
+                        Back
+                    </button>
+                    <button type="submit" class="btn btn-continue" id="continueBtn" disabled>
+                        Continue
+                    </button>
+                </div>
+
+            </form>
+
+            <!-- Progress Indicator -->
+            <div class="progress-indicator">
+                <p class="progress-text">
+                    <span id="answeredCount">0</span> of <span id="totalCount">4</span> questions answered
+                </p>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,441 @@
+/* ============================================
+   BASE STYLES
+============================================ */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #e8f4f0 0%, #d4e7e0 100%);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+/* ============================================
+   MAIN CONTAINER
+============================================ */
+.terms-container {
+  width: 100%;
+  max-width: 900px;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  display: flex;
+  flex-direction: column;
+  height: 90vh;
+  max-height: 800px;
+  overflow: hidden;
+}
+
+/* ============================================
+   HEADER
+============================================ */
+.terms-header {
+  padding: 32px;
+  text-align: center;
+  border-bottom: 2px solid #e8f4f0;
+  background: linear-gradient(135deg, #f8fcfb 0%, #ffffff 100%);
+}
+
+.terms-title {
+  font-size: 32px;
+  font-weight: 700;
+  color: #2e3a3a;
+  margin-bottom: 8px;
+}
+
+.terms-subtitle {
+  font-size: 15px;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+/* ============================================
+   CONTENT WRAPPER
+============================================ */
+.terms-content-wrapper {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+.terms-content {
+  height: 100%;
+  overflow-y: auto;
+  padding: 32px;
+  scroll-behavior: smooth;
+}
+
+/* Custom Scrollbar */
+.terms-content::-webkit-scrollbar {
+  width: 10px;
+}
+
+.terms-content::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.terms-content::-webkit-scrollbar-thumb {
+  background: #a4c4b5;
+  border-radius: 10px;
+  transition: background 0.3s;
+}
+
+.terms-content::-webkit-scrollbar-thumb:hover {
+  background: #8fb9a8;
+}
+
+/* ============================================
+   SCROLL INDICATOR
+============================================ */
+.scroll-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, rgba(255,255,255,1) 0%, rgba(255,255,255,0.9) 50%, rgba(255,255,255,0) 100%);
+  height: 80px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 16px;
+  pointer-events: none;
+  transition: opacity 0.3s, transform 0.3s;
+  color: #8fb9a8;
+  font-size: 14px;
+  font-weight: 500;
+  gap: 4px;
+}
+
+.scroll-indicator.hidden {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.scroll-indicator svg {
+  animation: bounce 2s infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(8px); }
+}
+
+/* ============================================
+   CONTENT SECTIONS
+============================================ */
+.section {
+  margin-bottom: 32px;
+}
+
+.section.last-section {
+  margin-bottom: 0;
+}
+
+.section-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 16px;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #a4c4b5;
+}
+
+.subsection-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 12px;
+  margin-top: 8px;
+}
+
+/* ============================================
+   TEXT ELEMENTS
+============================================ */
+p {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #4b5563;
+  margin-bottom: 12px;
+}
+
+ul, ol {
+  margin-left: 24px;
+  margin-bottom: 16px;
+}
+
+li {
+  font-size: 14px;
+  line-height: 1.7;
+  color: #4b5563;
+  margin-bottom: 8px;
+}
+
+strong {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.disclaimer-item {
+  background: #fef3c7;
+  border-left: 4px solid #f59e0b;
+  padding: 16px;
+  margin-bottom: 16px;
+  border-radius: 4px;
+}
+
+.disclaimer-item h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: #92400e;
+  margin-bottom: 8px;
+}
+
+.disclaimer-item p,
+.disclaimer-item li {
+  font-size: 13px;
+  color: #78350f;
+}
+
+.contact-list {
+  list-style: none;
+  margin-left: 0;
+  background: #f8f9fa;
+  padding: 16px;
+  border-radius: 8px;
+}
+
+.contact-list li {
+  padding: 4px 0;
+}
+
+.effective-date {
+  margin-top: 24px;
+  padding: 16px;
+  background: #e8f4f0;
+  border-radius: 8px;
+  text-align: center;
+  color: #2e3a3a;
+  font-size: 14px;
+}
+
+/* ============================================
+   FOOTER
+============================================ */
+.terms-footer {
+  padding: 24px 32px;
+  border-top: 2px solid #e8f4f0;
+  background: #fafafa;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.checkbox-group input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: #8fb9a8;
+}
+
+.checkbox-group input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.checkbox-group label {
+  font-size: 14px;
+  color: #4b5563;
+  cursor: pointer;
+  user-select: none;
+  transition: color 0.3s;
+}
+
+.checkbox-group input[type="checkbox"]:disabled + label {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.checkbox-group input[type="checkbox"]:enabled + label {
+  color: #1f2937;
+  font-weight: 500;
+}
+
+.button-group {
+  display: flex;
+  gap: 16px;
+}
+
+/* ============================================
+   BUTTONS
+============================================ */
+.btn-decline,
+.btn-accept {
+  flex: 1;
+  height: 52px;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.btn-decline {
+  background: white;
+  border: 2px solid #e5e7eb;
+  color: #6b7280;
+}
+
+.btn-decline:hover {
+  border-color: #d1d5db;
+  background: #f9fafb;
+  color: #4b5563;
+}
+
+.btn-accept {
+  background: #8fb9a8;
+  color: white;
+  box-shadow: 0 4px 12px rgba(143, 185, 168, 0.3);
+}
+
+.btn-accept:hover:not(:disabled) {
+  background: #7da795;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(143, 185, 168, 0.4);
+}
+
+.btn-accept:disabled {
+  background: #d1d5db;
+  color: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-accept:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* ============================================
+   SUCCESS STATE
+============================================ */
+.checkbox-group input[type="checkbox"]:checked + label {
+  color: #8fb9a8;
+  font-weight: 600;
+}
+
+/* ============================================
+   RESPONSIVE DESIGN
+============================================ */
+@media (max-width: 768px) {
+  body {
+    padding: 0;
+  }
+
+  .terms-container {
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .terms-header {
+    padding: 24px 20px;
+  }
+
+  .terms-title {
+    font-size: 24px;
+  }
+
+  .terms-subtitle {
+    font-size: 14px;
+  }
+
+  .terms-content {
+    padding: 20px;
+  }
+
+  .terms-footer {
+    padding: 20px;
+  }
+
+  .button-group {
+    flex-direction: column;
+  }
+
+  .section-title {
+    font-size: 18px;
+  }
+
+  .subsection-title {
+    font-size: 15px;
+  }
+}
+
+@media (max-width: 480px) {
+  .terms-title {
+    font-size: 20px;
+  }
+
+  .section-title {
+    font-size: 16px;
+  }
+
+  p, li {
+    font-size: 13px;
+  }
+
+  .btn-decline,
+  .btn-accept {
+    height: 48px;
+    font-size: 15px;
+  }
+}
+
+/* ============================================
+   ACCESSIBILITY
+============================================ */
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid #8fb9a8;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ============================================
+   LOADING ANIMATION
+============================================ */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.section {
+  animation: fadeInUp 0.5s ease-out;
+}

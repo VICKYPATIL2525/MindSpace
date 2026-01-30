@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - Welcome Back</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-content">
+            <!-- Left Side - Form Section -->
+            <div class="form-section">
+                <div class="form-wrapper">
+                    <!-- Header -->
+                    <div class="form-header">
+                        <h1 class="form-title">Welcome Back</h1>
+                        <p class="form-subtitle">Enter your details to access your healing space.</p>
+                    </div>
+
+                    <!-- Login Form -->
+                    <form id="loginForm" class="auth-form">
+                        <!-- Email Field -->
+                        <div class="form-group">
+                            <label for="email" class="form-label">Email address</label>
+                            <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                placeholder="Enter your email"
+                                class="form-input"
+                                required
+                                autocomplete="email"
+                            />
+                        </div>
+
+                        <!-- Password Field -->
+                        <div class="form-group">
+                            <label for="password" class="form-label">Password</label>
+                            <div class="password-input-wrapper">
+                                <input
+                                    type="password"
+                                    id="password"
+                                    name="password"
+                                    placeholder="Enter your password"
+                                    class="form-input password-input"
+                                    required
+                                    autocomplete="current-password"
+                                />
+                                <button type="button" class="password-toggle" id="togglePassword" aria-label="Toggle password visibility">
+                                    <svg class="eye-icon" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                        <path d="M10 4C5 4 2 10 2 10s3 6 8 6 8-6 8-6-3-6-8-6z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <circle cx="10" cy="10" r="3" stroke="currentColor" stroke-width="1.5"/>
+                                    </svg>
+                                    <svg class="eye-off-icon hidden" width="20" height="20" viewBox="0 0 20 20" fill="none">
+                                        <path d="M2 2l16 16M10 7c1.657 0 3 1.343 3 3m-6 0a3 3 0 013-3m-6 0s3-6 8-6c5 0 8 6 8 6s-3 6-8 6c-5 0-8-6-8-6z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Remember & Forgot -->
+                        <div class="form-options">
+                            <label class="remember-checkbox">
+                                <input type="checkbox" id="remember" name="remember" />
+                                <span>Remember me</span>
+                            </label>
+                            <button type="button" class="forgot-link" id="forgotPassword">
+                                Forgot Password?
+                            </button>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="btn-submit">
+                            Login
+                        </button>
+                    </form>
+
+                    <!-- Divider -->
+                    <div class="divider">
+                        <span class="divider-line"></span>
+                        <span class="divider-text">or continue with</span>
+                        <span class="divider-line"></span>
+                    </div>
+
+                    <!-- Social Login -->
+                    <div class="social-buttons">
+                        <button type="button" class="social-btn" id="googleLogin">
+                            <img src="https://www.figma.com/api/mcp/asset/8e57c3fd-438a-47b2-bf07-f15be869a03a" alt="Google" class="social-icon" />
+                            <span>Google</span>
+                        </button>
+                        <button type="button" class="social-btn" id="appleLogin">
+                            <img src="https://www.figma.com/api/mcp/asset/429a3412-7ba2-451d-8d0c-739546ac451e" alt="Apple" class="social-icon" />
+                            <span>Apple</span>
+                        </button>
+                    </div>
+
+                    <!-- Sign Up Link -->
+                    <div class="auth-link">
+                        <span>Don't have an account?</span>
+                        <button type="button" class="link-button" id="signupLink">Sign Up</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side - Hero Image -->
+            <div class="hero-section">
+                <img
+                    src="https://www.figma.com/api/mcp/asset/cbaf7127-297c-400f-8543-e820a3bd3ed0"
+                    alt="Mental Health"
+                    class="hero-image"
+                />
+                <div class="hero-overlay">
+                    <img
+                        src="https://www.figma.com/api/mcp/asset/8be5cd43-91fe-4fb0-b442-e18937cb469c"
+                        alt="Overlay"
+                        class="overlay-image"
+                    />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="login.js"></script>
+</body>
+</html>

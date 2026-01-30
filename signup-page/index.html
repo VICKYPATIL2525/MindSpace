@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Get Started Now</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="signup-container">
+        <div class="signup-content">
+            <!-- Left Side - Form Section -->
+            <div class="form-section">
+                <div class="form-wrapper">
+                    <h1 class="form-title">Get Started Now</h1>
+
+                    <form id="signupForm" class="signup-form">
+                        <!-- Name Field -->
+                        <div class="form-group">
+                            <label for="name" class="form-label">Name</label>
+                            <input
+                                type="text"
+                                id="name"
+                                name="name"
+                                placeholder="Enter your name"
+                                class="form-input"
+                                required
+                            />
+                        </div>
+
+                        <!-- Email Field -->
+                        <div class="form-group">
+                            <label for="email" class="form-label">Email address</label>
+                            <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                placeholder="Enter your email"
+                                class="form-input"
+                                required
+                            />
+                        </div>
+
+                        <!-- Password Field -->
+                        <div class="form-group">
+                            <label for="password" class="form-label">Password</label>
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                placeholder="Enter your password"
+                                class="form-input"
+                                required
+                            />
+                        </div>
+
+                        <!-- Terms Checkbox -->
+                        <div class="terms-group">
+                            <input
+                                type="checkbox"
+                                id="agreeToTerms"
+                                name="agreeToTerms"
+                                class="terms-checkbox"
+                                required
+                            />
+                            <label for="agreeToTerms" class="terms-label">
+                                <span class="terms-text-light">I </span>
+                                <span class="terms-text-dark">agree to the terms & policy</span>
+                            </label>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" class="submit-button">
+                            Signup
+                        </button>
+                    </form>
+
+                    <!-- Divider -->
+                    <div class="divider">
+                        <span class="divider-line"></span>
+                        <span class="divider-text">Or</span>
+                        <span class="divider-line"></span>
+                    </div>
+
+                    <!-- Social Login Buttons -->
+                    <div class="social-buttons">
+                        <button type="button" id="googleSignup" class="social-button">
+                            <img src="https://www.figma.com/api/mcp/asset/a7a0ab6e-34b1-421b-a33d-489b5c82a179" alt="Google" class="social-icon" />
+                            <span>Google</span>
+                        </button>
+
+                        <button type="button" id="appleSignup" class="social-button">
+                            <img src="https://www.figma.com/api/mcp/asset/4d4f86b2-9e86-4ffe-a407-4624cf1b747c" alt="Apple" class="social-icon" />
+                            <span>Apple</span>
+                        </button>
+                    </div>
+
+                    <!-- Sign In Link -->
+                    <div class="signin-link">
+                        <span class="signin-text">Have an account? </span>
+                        <button type="button" id="signinButton" class="signin-button">
+                            Sign In
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side - Hero Image Section -->
+            <div class="hero-section">
+                <img
+                    src="https://www.figma.com/api/mcp/asset/abc3e1a1-a5fe-48ed-84ea-54425209f945"
+                    alt="Mental Health"
+                    class="hero-image"
+                />
+                <div class="hero-overlay">
+                    <img
+                        src="https://www.figma.com/api/mcp/asset/6d219984-ad5c-4a1c-9fda-c33271d720ab"
+                        alt="Overlay"
+                        class="overlay-image"
+                    />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

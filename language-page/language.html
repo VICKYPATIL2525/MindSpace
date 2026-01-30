@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choose Your Language</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="language-container">
+        <div class="language-content">
+            <!-- Header -->
+            <div class="language-header">
+                <h1 class="language-title">Choose your preferred language</h1>
+                <p class="language-subtitle">Select the language you're most comfortable with</p>
+            </div>
+
+            <!-- Language Grid -->
+            <div class="language-grid">
+                <button type="button" class="language-card" data-lang="en">
+                    <span class="language-name">English</span>
+                    <span class="language-native">English</span>
+                </button>
+
+                <button type="button" class="language-card" data-lang="hi">
+                    <span class="language-name">Hindi</span>
+                    <span class="language-native">हिन्दी</span>
+                </button>
+
+                <button type="button" class="language-card" data-lang="mr">
+                    <span class="language-name">Marathi</span>
+                    <span class="language-native">मराठी</span>
+                </button>
+
+                <button type="button" class="language-card" data-lang="bn">
+                    <span class="language-name">Bengali</span>
+                    <span class="language-native">বাংলা</span>
+                </button>
+
+                <button type="button" class="language-card" data-lang="ta">
+                    <span class="language-name">Tamil</span>
+                    <span class="language-native">தமிழ்</span>
+                </button>
+
+                <button type="button" class="language-card" data-lang="te">
+                    <span class="language-name">Telugu</span>
+                    <span class="language-native">తెలుగు</span>
+                </button>
+
+                <button type="button" class="language-card" data-lang="gu">
+                    <span class="language-name">Gujarati</span>
+                    <span class="language-native">ગુજરાતી</span>
+                </button>
+
+                <button type="button" class="language-card" data-lang="kn">
+                    <span class="language-name">Kannada</span>
+                    <span class="language-native">ಕನ್ನಡ</span>
+                </button>
+            </div>
+
+            <!-- Continue Button & Note -->
+            <div class="language-footer">
+                <button type="button" class="btn-continue" id="continueBtn" disabled>
+                    Continue
+                </button>
+                <p class="settings-note">You can change this later in settings</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="language.js"></script>
+</body>
+</html>

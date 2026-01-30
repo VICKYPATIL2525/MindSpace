@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Information - MindSpace</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Header Section -->
+        <header class="page-header">
+            <div class="header-content">
+                <h1 class="page-title">Client Detail</h1>
+                <p class="page-subtitle">Please provide your complete information below</p>
+            </div>
+            <div class="progress-steps">
+                <div class="step completed">
+                    <span class="step-number">1</span>
+                    <span class="step-label">Terms</span>
+                </div>
+                <div class="step-line completed"></div>
+                <div class="step active">
+                    <span class="step-number">2</span>
+                    <span class="step-label">Information</span>
+                </div>
+                <div class="step-line"></div>
+                <div class="step">
+                    <span class="step-number">3</span>
+                    <span class="step-label">Assessment</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Form -->
+        <form class="info-form" id="infoForm">
+
+            <!-- Personal Information Section -->
+            <section class="form-section">
+                <div class="section-header">
+                    <svg class="section-icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <h2 class="section-title">Personal Information</h2>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="firstName" class="form-label">First Name <span class="required">*</span></label>
+                        <input type="text" id="firstName" name="firstName" class="form-input" placeholder="Enter first name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="lastName" class="form-label">Last Name <span class="required">*</span></label>
+                        <input type="text" id="lastName" name="lastName" class="form-input" placeholder="Enter last name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="age" class="form-label">Age <span class="required">*</span></label>
+                        <input type="number" id="age" name="age" class="form-input" placeholder="Enter age" min="1" max="120" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="dob" class="form-label">Date of Birth <span class="required">*</span></label>
+                        <input type="date" id="dob" name="dob" class="form-input" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="email" class="form-label">Email <span class="required">*</span></label>
+                        <input type="email" id="email" name="email" class="form-input" placeholder="Enter email address" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="mobile" class="form-label">Mobile Number <span class="required">*</span></label>
+                        <input type="tel" id="mobile" name="mobile" class="form-input" placeholder="+91-9786xxxxxx" pattern="[+]?[0-9]{10,15}" required>
+                    </div>
+                </div>
+
+                <div class="form-group full-width">
+                    <label class="form-label">Marital Status <span class="required">*</span></label>
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="maritalStatus" value="married" required>
+                            <span class="radio-label">Married</span>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="maritalStatus" value="unmarried">
+                            <span class="radio-label">Unmarried</span>
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Address Section -->
+            <section class="form-section">
+                <div class="section-header">
+                    <svg class="section-icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="12" cy="10" r="3" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <h2 class="section-title">Address Details</h2>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="address" class="form-label">Address/City <span class="required">*</span></label>
+                        <input type="text" id="address" name="address" class="form-input" placeholder="Enter city" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pinCode" class="form-label">Pin Code <span class="required">*</span></label>
+                        <input type="text" id="pinCode" name="pinCode" class="form-input" placeholder="Enter pin code" pattern="[0-9]{6}" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="state" class="form-label">State <span class="required">*</span></label>
+                        <input type="text" id="state" name="state" class="form-input" placeholder="Enter state" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="district" class="form-label">District <span class="required">*</span></label>
+                        <input type="text" id="district" name="district" class="form-input" placeholder="Enter district" required>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Professional Information Section -->
+            <section class="form-section">
+                <div class="section-header">
+                    <svg class="section-icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <rect x="2" y="7" width="20" height="14" rx="2" ry="2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <h2 class="section-title">Professional Information</h2>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="job" class="form-label">Job/Work</label>
+                        <input type="text" id="job" name="job" class="form-input" placeholder="Enter job title">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="company" class="form-label">Company Name</label>
+                        <input type="text" id="company" name="company" class="form-input" placeholder="Enter company name">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Stress Factors Section -->
+            <section class="form-section">
+                <div class="section-header">
+                    <svg class="section-icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M12 8v4M12 16h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <h2 class="section-title">Stress Factors</h2>
+                </div>
+
+                <div class="form-group full-width">
+                    <label class="form-label">Stress Reason (Select all that apply)</label>
+                    <div class="checkbox-pills">
+                        <label class="pill-option">
+                            <input type="checkbox" name="stressReason" value="job-pressure">
+                            <span class="pill-label">Job pressure</span>
+                        </label>
+                        <label class="pill-option">
+                            <input type="checkbox" name="stressReason" value="family-issues">
+                            <span class="pill-label">Family Issues</span>
+                        </label>
+                        <label class="pill-option">
+                            <input type="checkbox" name="stressReason" value="financial-problem">
+                            <span class="pill-label">Financial Problem</span>
+                        </label>
+                        <label class="pill-option">
+                            <input type="checkbox" name="stressReason" value="health-concerns">
+                            <span class="pill-label">Health Concerns</span>
+                        </label>
+                        <label class="pill-option">
+                            <input type="checkbox" name="stressReason" value="relationship">
+                            <span class="pill-label">Relationship</span>
+                        </label>
+                        <label class="pill-option">
+                            <input type="checkbox" name="stressReason" value="other">
+                            <span class="pill-label">Other</span>
+                        </label>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Family Members Section -->
+            <section class="form-section">
+                <div class="section-header">
+                    <svg class="section-icon" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                    <h2 class="section-title">Family Members</h2>
+                    <p class="section-description">Optional - Provide family member names if comfortable</p>
+                </div>
+
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="father" class="form-label">Father</label>
+                        <input type="text" id="father" name="father" class="form-input" placeholder="Father's name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="mother" class="form-label">Mother</label>
+                        <input type="text" id="mother" name="mother" class="form-input" placeholder="Mother's name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="spouse" class="form-label">Spouse</label>
+                        <input type="text" id="spouse" name="spouse" class="form-input" placeholder="Spouse's name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="children" class="form-label">Children</label>
+                        <input type="text" id="children" name="children" class="form-input" placeholder="Children's names">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="grandfather" class="form-label">Grandfather</label>
+                        <input type="text" id="grandfather" name="grandfather" class="form-input" placeholder="Grandfather's name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="grandmother" class="form-label">Grandmother</label>
+                        <input type="text" id="grandmother" name="grandmother" class="form-input" placeholder="Grandmother's name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sister" class="form-label">Sister</label>
+                        <input type="text" id="sister" name="sister" class="form-input" placeholder="Sister's name">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="brother" class="form-label">Brother</label>
+                        <input type="text" id="brother" name="brother" class="form-input" placeholder="Brother's name">
+                    </div>
+                </div>
+            </section>
+
+            <!-- Submit Button -->
+            <div class="form-actions">
+                <button type="submit" class="btn-submit" id="submitBtn">
+                    <span>Submit and Continue</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+                        <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+            </div>
+
+        </form>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
