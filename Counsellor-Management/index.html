@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindSpace - Counsellor Management System</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <span class="logo-text"><span class="logo-primary">Mind</span>Space</span>
+            </div>
+            <nav class="nav-menu">
+                <a href="#dashboard" class="nav-item active" data-section="dashboard">
+                    <span class="nav-icon">📊</span>
+                    <span class="nav-label">Dashboard</span>
+                </a>
+                <a href="#counsellors" class="nav-item" data-section="counsellors">
+                    <span class="nav-icon">👥</span>
+                    <span class="nav-label">Counsellors</span>
+                </a>
+                <a href="#clients" class="nav-item" data-section="clients">
+                    <span class="nav-icon">👤</span>
+                    <span class="nav-label">Clients</span>
+                </a>
+                <a href="#appointments" class="nav-item" data-section="appointments">
+                    <span class="nav-icon">📅</span>
+                    <span class="nav-label">Appointments</span>
+                </a>
+                <a href="#tasks" class="nav-item" data-section="tasks">
+                    <span class="nav-icon">✓</span>
+                    <span class="nav-label">Tasks</span>
+                </a>
+                <a href="#settings" class="nav-item" data-section="settings">
+                    <span class="nav-icon">⚙️</span>
+                    <span class="nav-label">Settings</span>
+                </a>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Top Navigation Bar -->
+            <header class="top-bar">
+                <div class="search-container">
+                    <input type="text" placeholder="Search..." class="search-input">
+                    <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <path d="m21 21-4.35-4.35"></path>
+                    </svg>
+                </div>
+                <div class="top-bar-right">
+                    <div class="language-selector">
+                        <span class="lang-text">English</span>
+                    </div>
+                    <div class="notification-icon">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V2c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 3.36 6 5.92 6 9v5l-2 2v1h16v-1l-2-2z"/>
+                        </svg>
+                        <span class="notification-badge">6</span>
+                    </div>
+                    <div class="user-profile">
+                        <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 44 44'%3E%3Crect fill='%23E8D4C0' width='44' height='44'/%3E%3Ccircle cx='22' cy='15' r='7' fill='%23D4A574'/%3E%3Cpath d='M8 44c0-9 6-16 14-16s14 7 14 16' fill='%23D4A574'/%3E%3C/svg%3E" alt="Profile" class="profile-avatar">
+                        <div class="user-info">
+                            <p class="user-name">Moni Roy</p>
+                            <p class="user-role">Admin</p>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Dashboard Section -->
+            <section id="dashboard" class="content-section" style="display: block;">
+                <div class="page-header">
+                    <h1>Dashboard</h1>
+                    <p class="subtitle">Welcome to MindSpace Management System</p>
+                </div>
+
+                <!-- Stats Grid (4 columns for Dashboard) -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-content">
+                            <p class="stat-title">Total counsellor</p>
+                            <p class="stat-number">25</p>
+                        </div>
+                        <div class="stat-footer">
+                            <span class="trend-up">📈 8.5%</span>
+                            <span class="trend-text">Up from yesterday</span>
+                        </div>
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <svg viewBox="0 0 24 24" fill="white">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-content">
+                            <p class="stat-title">Total clients</p>
+                            <p class="stat-number">1003</p>
+                        </div>
+                        <div class="stat-footer">
+                            <span class="trend-up">📈 1.3%</span>
+                            <span class="trend-text">Up from past week</span>
+                        </div>
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                            <svg viewBox="0 0 24 24" fill="white">
+                                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-content">
+                            <p class="stat-title">Total Appointments</p>
+                            <p class="stat-number">890</p>
+                        </div>
+                        <div class="stat-footer">
+                            <span class="trend-down">📉 4.3%</span>
+                            <span class="trend-text">Down from yesterday</span>
+                        </div>
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+                            <svg viewBox="0 0 24 24" fill="white">
+                                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.3-1.54L6.5 17h11l-3.54-4.71z"/>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div class="stat-card">
+                        <div class="stat-content">
+                            <p class="stat-title">Pending Verification</p>
+                            <p class="stat-number">20</p>
+                        </div>
+                        <div class="stat-footer">
+                            <span style="color: #999;">No change</span>
+                        </div>
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);">
+                            <svg viewBox="0 0 24 24" fill="white">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Counsellor Overview Table -->
+                <div class="table-container">
+                    <div class="table-header">
+                        <h2>Counsellor Overview</h2>
+                        <p class="table-info">6 of 25 counsellors</p>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Total Client</th>
+                                <th>Today Appointments</th>
+                                <th>Status</th>
+                                <th>ID No.</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Dr. Arya Sinha</td>
+                                <td>arya.sinha@mindspace.com</td>
+                                <td>120</td>
+                                <td>5</td>
+                                <td><span class="status-badge active">Active</span></td>
+                                <td>C001</td>
+                            </tr>
+                            <tr>
+                                <td>Dr. Rohan Patel</td>
+                                <td>rohan.patel@mindspace.com</td>
+                                <td>98</td>
+                                <td>3</td>
+                                <td><span class="status-badge active">Active</span></td>
+                                <td>C002</td>
+                            </tr>
+                            <tr>
+                                <td>Priya Desai</td>
+                                <td>priya.desai@mindspace.com</td>
+                                <td>87</td>
+                                <td>2</td>
+                                <td><span class="status-badge active">Active</span></td>
+                                <td>C003</td>
+                            </tr>
+                            <tr>
+                                <td>Amit Kumar</td>
+                                <td>amit.kumar@mindspace.com</td>
+                                <td>76</td>
+                                <td>4</td>
+                                <td><span class="status-badge active">Active</span></td>
+                                <td>C004</td>
+                            </tr>
+                            <tr>
+                                <td>Neha Gupta</td>
+                                <td>neha.gupta@mindspace.com</td>
+                                <td>65</td>
+                                <td>1</td>
+                                <td><span class="status-badge active">Active</span></td>
+                                <td>C005</td>
+                            </tr>
+                            <tr>
+                                <td>Vikram Singh</td>
+                                <td>vikram.singh@mindspace.com</td>
+                                <td>54</td>
+                                <td>2</td>
+                                <td><span class="status-badge active">Active</span></td>
+                                <td>C006</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Counsellors Section -->
+            <section id="counsellors" class="content-section" style="display: none;">
+                <div class="page-header">
+                    <h1>Counsellors</h1>
+                    <p class="subtitle">Overview of registered professionals</p>
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="stat-content">
+                            <p class="stat-title">Total Counsellors:</p>
+                            <p class="stat-number">25</p>
+                        </div>
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <svg viewBox="0 0 24 24" fill="white">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-content">
+                            <p class="stat-title">Available Now:</p>
+                            <p class="stat-number">3</p>
+                        </div>
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                            <svg viewBox="0 0 24 24" fill="white">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-header">
+                        <h2>Registered Counsellors</h2>
+                    </div>
+                    <div class="table-controls">
+                        <input type="text" placeholder="Search here..." class="search-input">
+                        <select class="sort-dropdown">
+                            <option>Sort by...</option>
+                            <option>Name A-Z</option>
+                            <option>Recent</option>
+                        </select>
+                        <button class="btn-add-counsellor">Add New Counsellor</button>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th>Specification</th>
+                                <th>Total Sessions</th>
+                                <th>Priority</th>
+                                <th>ID No.</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Dr. Arya Sinha</td>
+                                <td>arya.sinha@mindspace.com</td>
+                                <td>Anxiety Disorders</td>
+                                <td>156</td>
+                                <td><span class="priority-badge high">High</span></td>
+                                <td>C001</td>
+                            </tr>
+                            <tr>
+                                <td>Dr. Rohan Patel</td>
+                                <td>rohan.patel@mindspace.com</td>
+                                <td>Depression & Trauma</td>
+                                <td>142</td>
+                                <td><span class="priority-badge high">High</span></td>
+                                <td>C002</td>
+                            </tr>
+                            <tr>
+                                <td>Priya Desai</td>
+                                <td>priya.desai@mindspace.com</td>
+                                <td>Family Counselling</td>
+                                <td>98</td>
+                                <td><span class="priority-badge medium">Medium</span></td>
+                                <td>C003</td>
+                            </tr>
+                            <tr>
+                                <td>Amit Kumar</td>
+                                <td>amit.kumar@mindspace.com</td>
+                                <td>Stress Management</td>
+                                <td>87</td>
+                                <td><span class="priority-badge medium">Medium</span></td>
+                                <td>C004</td>
+                            </tr>
+                            <tr>
+                                <td>Neha Gupta</td>
+                                <td>neha.gupta@mindspace.com</td>
+                                <td>Child Psychology</td>
+                                <td>76</td>
+                                <td><span class="priority-badge low">Low</span></td>
+                                <td>C005</td>
+                            </tr>
+                            <tr>
+                                <td>Vikram Singh</td>
+                                <td>vikram.singh@mindspace.com</td>
+                                <td>Relationship Therapy</td>
+                                <td>65</td>
+                                <td><span class="priority-badge low">Low</span></td>
+                                <td>C006</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Clients Section -->
+            <section id="clients" class="content-section" style="display: none;">
+                <div class="page-header">
+                    <h1>Clients</h1>
+                    <p class="subtitle">Client directory and management</p>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-header">
+                        <h2>Clients Directory</h2>
+                    </div>
+                    <div class="table-controls">
+                        <input type="text" placeholder="Search here..." class="search-input">
+                        <select class="sort-dropdown">
+                            <option>Sort by...</option>
+                            <option>Name A-Z</option>
+                            <option>Recent</option>
+                        </select>
+                        <button class="btn-add-client">Add New Client</button>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Client Name</th>
+                                <th>Email</th>
+                                <th>Assigned Counsellor</th>
+                                <th>Last Session</th>
+                                <th>Next Session</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Kabir Reddy</td>
+                                <td>kabir.reddy.pro@gmail.com</td>
+                                <td>Dr. Arya Sinha</td>
+                                <td>Yesterday</td>
+                                <td>Today</td>
+                                <td><span class="status-badge pending">Pending</span></td>
+                            </tr>
+                            <tr>
+                                <td>Ishani Joshi</td>
+                                <td>ishani.joshi.work@gmail.com</td>
+                                <td>Dr. Arya Sinha</td>
+                                <td>1 week ago</td>
+                                <td>Tomorrow</td>
+                                <td><span class="status-badge pending">Pending</span></td>
+                            </tr>
+                            <tr>
+                                <td>Meera Kulkarni</td>
+                                <td>meera.kulkarni@gmail.com</td>
+                                <td>Dr. Rohan Patel</td>
+                                <td>2 weeks ago</td>
+                                <td>Tomorrow</td>
+                                <td><span class="status-badge confirmed">Confirmed</span></td>
+                            </tr>
+                            <tr>
+                                <td>Aditya Chatterjee</td>
+                                <td>chatterjee.aditya@gmail.com</td>
+                                <td>On Hold</td>
+                                <td>2 weeks ago</td>
+                                <td>Tomorrow</td>
+                                <td><span class="status-badge pending">Pending</span></td>
+                            </tr>
+                            <tr>
+                                <td>Sneha Patil</td>
+                                <td>sneha.patil@gmail.com</td>
+                                <td>On Hold</td>
+                                <td>--</td>
+                                <td>Today</td>
+                                <td><span class="status-badge completed">Completed</span></td>
+                            </tr>
+                            <tr>
+                                <td>Rahul Verma</td>
+                                <td>rahul.verma88@gmail.com</td>
+                                <td>Dr. Arya Sinha</td>
+                                <td>2 weeks ago</td>
+                                <td>Tomorrow</td>
+                                <td><span class="status-badge pending">Pending</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Appointments Section -->
+            <section id="appointments" class="content-section" style="display: none;">
+                <div class="page-header">
+                    <h1>Appointments</h1>
+                    <p class="subtitle">_______________________________</p>
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="stat-content">
+                            <p class="stat-title">Total Client handled:</p>
+                            <p class="stat-number">45</p>
+                        </div>
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <svg viewBox="0 0 24 24" fill="white">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm3.5-9c.83 0 1.5-.67 1.5-1.5S16.33 8 15.5 8 14 8.67 14 9.5s.67 1.5 1.5 1.5zm-7 0c.83 0 1.5-.67 1.5-1.5S9.33 8 8.5 8 7 8.67 7 9.5 7.67 11 8.5 11zm3.5 6.5c2.33 0 4.31-1.46 5.11-3.5H6.89c.8 2.04 2.78 3.5 5.11 3.5z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-content">
+                            <p class="stat-title">Pending Appointments:</p>
+                            <p class="stat-number">12</p>
+                        </div>
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                            <svg viewBox="0 0 24 24" fill="white">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div class="table-header">
+                        <h2>Upcoming Appointments</h2>
+                    </div>
+                    <div class="table-controls">
+                        <input type="text" placeholder="Search here..." class="search-input">
+                        <select class="sort-dropdown">
+                            <option>Sort by...</option>
+                            <option>Date</option>
+                            <option>Recent</option>
+                        </select>
+                        <button class="btn-search">SEARCH</button>
+                    </div>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Client ID</th>
+                                <th>Name</th>
+                                <th>Appointment Specifics</th>
+                                <th>Session Mode</th>
+                                <th>Status Tracking</th>
+                                <th>Set By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>052142</td>
+                                <td>Meera Kulkarni</td>
+                                <td>2025-12-12<br>10.45AM</td>
+                                <td>Audio</td>
+                                <td><span class="status-badge pending">Pending</span></td>
+                                <td>Counselor</td>
+                            </tr>
+                            <tr>
+                                <td>343424</td>
+                                <td>Arjun Sharma</td>
+                                <td>2026-02-04<br>12.55PM</td>
+                                <td>Audio</td>
+                                <td><span class="status-badge pending">Pending</span></td>
+                                <td>Client</td>
+                            </tr>
+                            <tr>
+                                <td>446645</td>
+                                <td>Priya Deshmukh</td>
+                                <td>2026-02-12<br>11.35AM</td>
+                                <td>Video</td>
+                                <td><span class="status-badge confirmed">Confirmed</span></td>
+                                <td>Counselor</td>
+                            </tr>
+                            <tr>
+                                <td>895235</td>
+                                <td>Rohan Iyer</td>
+                                <td>2026-03-05<br>10.45AM</td>
+                                <td>Audio</td>
+                                <td><span class="status-badge pending">Pending</span></td>
+                                <td>Client</td>
+                            </tr>
+                            <tr>
+                                <td>658745</td>
+                                <td>Anjali Nair</td>
+                                <td>2026-03-09<br>03.00PM</td>
+                                <td>In-person</td>
+                                <td><span class="status-badge completed">Completed</span></td>
+                                <td>Counselor</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- Tasks Section -->
+            <section id="tasks" class="content-section" style="display: none;">
+                <div class="page-header">
+                    <h1>Notes & Tasks</h1>
+                    <p class="subtitle">_______________________________</p>
+                </div>
+
+                <div class="stats-row">
+                    <div class="stat-card">
+                        <div class="stat-content">
+                            <p class="stat-title">Total Notes:</p>
+                            <p class="stat-number">18</p>
+                        </div>
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+                            <svg viewBox="0 0 24 24" fill="white">
+                                <path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zm-5.04-6.71l-2.75 3.54-1.3-1.54L6.5 17h11l-3.54-4.71z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-content">
+                            <p class="stat-title">Pending Tasks:</p>
+                            <p class="stat-number">7</p>
+                        </div>
+                        <div class="stat-icon" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+                            <svg viewBox="0 0 24 24" fill="white">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="notes-container">
+                    <div class="notes-header">
+                        <h2>My Notes</h2>
+                        <button class="btn-add-note">+ Add New Note</button>
+                    </div>
+
+                    <div class="add-note-form" id="addNoteForm" style="display: none;">
+                        <input type="text" class="note-title-input" placeholder="Note Title" id="noteTitle">
+                        <textarea class="note-content-input" placeholder="Write your note here..." id="noteContent" rows="5"></textarea>
+                        <div class="form-actions">
+                            <button class="btn-save-note">Save Note</button>
+                            <button class="btn-cancel-note">Cancel</button>
+                        </div>
+                    </div>
+
+                    <div class="notes-grid" id="notesGrid">
+                        <div class="note-card">
+                            <div class="note-header">
+                                <h3>Client Session Notes</h3>
+                                <button class="note-delete-btn">×</button>
+                            </div>
+                            <p class="note-content">Follow-up session scheduled with Arjun Sharma. Discuss anxiety management techniques.</p>
+                            <p class="note-date">Feb 4, 2026</p>
+                            <span class="note-tag">Client</span>
+                        </div>
+
+                        <div class="note-card">
+                            <div class="note-header">
+                                <h3>Team Meeting Agenda</h3>
+                                <button class="note-delete-btn">×</button>
+                            </div>
+                            <p class="note-content">Monthly performance review and training session on counselling techniques.</p>
+                            <p class="note-date">Feb 3, 2026</p>
+                            <span class="note-tag">Meeting</span>
+                        </div>
+
+                        <div class="note-card">
+                            <div class="note-header">
+                                <h3>Research Article Ideas</h3>
+                                <button class="note-delete-btn">×</button>
+                            </div>
+                            <p class="note-content">Explore latest studies on cognitive behavioral therapy effectiveness.</p>
+                            <p class="note-date">Feb 2, 2026</p>
+                            <span class="note-tag">Research</span>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Settings Section -->
+            <section id="settings" class="content-section" style="display: none;">
+                <div class="page-header">
+                    <h1>Settings</h1>
+                    <p class="subtitle">Manage your account and preferences</p>
+                </div>
+
+                <div class="settings-container">
+                    <div class="settings-sidebar">
+                        <div class="settings-menu">
+                            <button class="settings-menu-item active" data-settings-section="account">
+                                <span class="settings-icon">👤</span>
+                                <span>Account Settings</span>
+                            </button>
+                            <button class="settings-menu-item" data-settings-section="notifications">
+                                <span class="settings-icon">🔔</span>
+                                <span>Notifications</span>
+                            </button>
+                            <button class="settings-menu-item" data-settings-section="privacy">
+                                <span class="settings-icon">🔒</span>
+                                <span>Privacy & Security</span>
+                            </button>
+                            <button class="settings-menu-item" data-settings-section="preferences">
+                                <span class="settings-icon">⚙️</span>
+                                <span>Preferences</span>
+                            </button>
+                            <button class="settings-menu-item" data-settings-section="billing">
+                                <span class="settings-icon">💳</span>
+                                <span>Billing & Plan</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Settings Content -->
+                    <div class="settings-content">
+                        <!-- Account Settings Section -->
+                        <div class="settings-section-content active" id="account-content">
+                            <h2>Account Settings</h2>
+                            <form class="settings-form">
+                                <div class="form-group">
+                                    <label for="fullName">Full Name</label>
+                                    <input type="text" id="fullName" placeholder="Enter your full name" value="Moni Roy">
+                                </div>
+                                <div class="form-group">
+                                    <label for="email">Email Address</label>
+                                    <input type="email" id="email" placeholder="Enter your email" value="moni.roy@mindspace.com">
+                                </div>
+                                <div class="form-group">
+                                    <label for="phone">Phone Number</label>
+                                    <input type="tel" id="phone" placeholder="Enter your phone number" value="+91 9876543210">
+                                </div>
+                                <div class="form-group">
+                                    <label for="specialization">Specialization</label>
+                                    <select id="specialization">
+                                        <option>Anxiety Disorders</option>
+                                        <option>Depression</option>
+                                        <option>Trauma Therapy</option>
+                                        <option>Family Counselling</option>
+                                    </select>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="button" class="btn-save">Save Changes</button>
+                                    <button type="button" class="btn-cancel">Cancel</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Notifications Section -->
+                        <div class="settings-section-content" id="notifications-content">
+                            <h2>Notification Settings</h2>
+                            <div class="notification-settings">
+                                <div class="notification-item">
+                                    <div class="notification-header">
+                                        <h3>Email Notifications</h3>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" checked>
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                    <p class="notification-description">Receive email notifications for important updates</p>
+                                </div>
+
+                                <div class="notification-item">
+                                    <div class="notification-header">
+                                        <h3>Appointment Reminders</h3>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" checked>
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                    <p class="notification-description">Get reminders before scheduled appointments</p>
+                                </div>
+
+                                <div class="notification-item">
+                                    <div class="notification-header">
+                                        <h3>Client Messages</h3>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" checked>
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                    <p class="notification-description">Receive notifications when clients send messages</p>
+                                </div>
+
+                                <div class="notification-item">
+                                    <div class="notification-header">
+                                        <h3>System Updates</h3>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox">
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                    <p class="notification-description">Receive notifications about system maintenance</p>
+                                </div>
+
+                                <div class="notification-item">
+                                    <div class="notification-header">
+                                        <h3>Weekly Summary</h3>
+                                        <label class="toggle-switch">
+                                            <input type="checkbox" checked>
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                    </div>
+                                    <p class="notification-description">Get a weekly summary of your appointments and activities</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Privacy & Security Section -->
+                        <div class="settings-section-content" id="privacy-content">
+                            <h2>Privacy & Security</h2>
+                            <div class="security-items">
+                                <div class="security-item">
+                                    <div class="security-header">
+                                        <h3>Change Password</h3>
+                                        <p>Update your password regularly for better security</p>
+                                    </div>
+                                    <button class="btn-secondary">Update Password</button>
+                                </div>
+
+                                <div class="security-item">
+                                    <div class="security-header">
+                                        <h3>Two-Factor Authentication</h3>
+                                        <p>Add an extra layer of security to your account</p>
+                                    </div>
+                                    <button class="btn-secondary">Enable 2FA</button>
+                                </div>
+
+                                <div class="security-item">
+                                    <div class="security-header">
+                                        <h3>Active Sessions</h3>
+                                        <p>View and manage devices accessing your account</p>
+                                    </div>
+                                    <button class="btn-secondary">View Sessions</button>
+                                </div>
+
+                                <div class="security-item">
+                                    <div class="security-header">
+                                        <h3>Data Export</h3>
+                                        <p>Download all your data in a standard format</p>
+                                    </div>
+                                    <button class="btn-secondary">Export Data</button>
+                                </div>
+
+                                <div class="security-item danger">
+                                    <div class="security-header">
+                                        <h3>Delete Account</h3>
+                                        <p>Permanently delete your account and all associated data</p>
+                                    </div>
+                                    <button class="btn-danger">Delete Account</button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Preferences Section -->
+                        <div class="settings-section-content" id="preferences-content">
+                            <h2>Preferences</h2>
+                            <form class="settings-form">
+                                <div class="form-group">
+                                    <label for="language">Language</label>
+                                    <select id="language">
+                                        <option>English</option>
+                                        <option>Hindi</option>
+                                        <option>Spanish</option>
+                                        <option>French</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="timezone">Timezone</label>
+                                    <select id="timezone">
+                                        <option>IST (UTC+5:30)</option>
+                                        <option>UTC</option>
+                                        <option>EST (UTC-5)</option>
+                                        <option>PST (UTC-8)</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="theme">Theme</label>
+                                    <select id="theme">
+                                        <option>Light</option>
+                                        <option>Dark</option>
+                                        <option>Auto</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label for="dateFormat">Date Format</label>
+                                    <select id="dateFormat">
+                                        <option>DD/MM/YYYY</option>
+                                        <option>MM/DD/YYYY</option>
+                                        <option>YYYY-MM-DD</option>
+                                    </select>
+                                </div>
+                                <div class="form-actions">
+                                    <button type="button" class="btn-save">Save Preferences</button>
+                                    <button type="button" class="btn-cancel">Cancel</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Billing Section -->
+                        <div class="settings-section-content" id="billing-content">
+                            <h2>Billing & Plan</h2>
+                            <div class="billing-info">
+                                <div class="plan-card">
+                                    <h3>Current Plan</h3>
+                                    <p class="plan-name">Professional</p>
+                                    <p class="plan-price">₹499<span>/month</span></p>
+                                    <p class="plan-description">For professional counsellors managing multiple clients</p>
+                                    <div class="plan-features">
+                                        <p>✓ Up to 100 clients</p>
+                                        <p>✓ Video & Audio Sessions</p>
+                                        <p>✓ Advanced Analytics</p>
+                                        <p>✓ Priority Support</p>
+                                    </div>
+                                    <button class="btn-secondary">Manage Plan</button>
+                                </div>
+
+                                <div class="billing-history">
+                                    <h3>Billing History</h3>
+                                    <div class="history-table">
+                                        <div class="history-row">
+                                            <span>Monthly Subscription - Feb 2026</span>
+                                            <span class="amount">₹499</span>
+                                            <span class="status paid">Paid</span>
+                                        </div>
+                                        <div class="history-row">
+                                            <span>Monthly Subscription - Jan 2026</span>
+                                            <span class="amount">₹499</span>
+                                            <span class="status paid">Paid</span>
+                                        </div>
+                                        <div class="history-row">
+                                            <span>Monthly Subscription - Dec 2025</span>
+                                            <span class="amount">₹499</span>
+                                            <span class="status paid">Paid</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
