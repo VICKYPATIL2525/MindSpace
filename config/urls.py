@@ -66,6 +66,11 @@ urlpatterns = [
         name="delete_account",
     ),
     path(
+        "accounts/verify-email/<uuid:token>/",
+        account_views.verify_email_view,
+        name="verify_email",
+    ),
+    path(
         "accounts/verify-success/",
         account_views.verify_success_view,
         name="verify_success",

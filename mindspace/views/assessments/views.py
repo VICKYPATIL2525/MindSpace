@@ -28,6 +28,7 @@ from mindspace.models import (
     FusionPrediction,
     MediaAsset,
     ModalityResult,
+    PcaPipelineResult,
     PhonationAttempt,
     PhonationFeature,
     PhonationSession,
@@ -280,16 +281,19 @@ def safe_score(payload, *keys, max_value=100):
     return None
 
 
-def safe_confidence(payload):
-    value = None
+def normalize_confidence_value(value):
+    """
+    Convert API confidence value into DB range 0.00 to 1.00.
+    Accepts:
+      - 0.87
+      - 87
+      - "87%"
+    """
+    if value is None or value == "":
+        return None
 
-    if isinstance(payload, dict):
-        value = (
-            payload.get("confidence_score")
-            or payload.get("confidence")
-            or payload.get("probability")
-            or payload.get("score")
-        )
+    if isinstance(value, str):
+        value = value.strip().replace("%", "")
 
     conf = safe_decimal(value, default=None)
 
@@ -307,6 +311,72 @@ def safe_confidence(payload):
         conf = Decimal("0")
 
     return conf
+
+
+def safe_confidence(payload):
+    """
+    Robust confidence parser.
+
+    Many APIs do not return the same confidence key.
+    This checks common top-level and nested keys, then falls back to max probability
+    from probability/class distribution dictionaries.
+    """
+    if not isinstance(payload, dict):
+        return None
+
+    direct_keys = [
+        "confidence_score",
+        "confidence",
+        "probability",
+        "score",
+        "model_confidence",
+        "prediction_confidence",
+        "final_confidence",
+    ]
+
+    for key in direct_keys:
+        if key in payload:
+            conf = normalize_confidence_value(payload.get(key))
+            if conf is not None:
+                return conf
+
+    nested_keys = [
+        "scores",
+        "result",
+        "prediction",
+        "output",
+        "data",
+        "score_response",
+        "model_output",
+    ]
+
+    for nested_key in nested_keys:
+        nested = payload.get(nested_key)
+        if isinstance(nested, dict):
+            conf = safe_confidence(nested)
+            if conf is not None:
+                return conf
+
+    probability_keys = [
+        "probabilities",
+        "class_probabilities",
+        "risk_probabilities",
+        "prediction_probabilities",
+        "label_probabilities",
+    ]
+
+    for key in probability_keys:
+        values = payload.get(key)
+        if isinstance(values, dict) and values:
+            parsed = [
+                normalize_confidence_value(item)
+                for item in values.values()
+            ]
+            parsed = [item for item in parsed if item is not None]
+            if parsed:
+                return max(parsed)
+
+    return None
 
 
 def normalize_risk_label(label):
@@ -645,6 +715,79 @@ def cleanup_temp_file(file_path):
         pass
 
 
+def convert_audio_to_wav(input_file):
+    """
+    Convert browser-recorded audio/webm or audio/ogg to clean WAV before
+    sending to the Voice Feature Extraction API.
+
+    Output:
+      - mono
+      - 16000 Hz
+      - PCM 16-bit WAV
+
+    This fixes API errors like:
+      Format not recognised
+      Error opening /tmp/tmpxxxx.wav
+    """
+    input_suffix = ".webm"
+
+    original_name = getattr(input_file, "name", "") or ""
+    if "." in original_name:
+        input_suffix = "." + original_name.split(".")[-1].lower()
+
+    temp_input = tempfile.NamedTemporaryFile(delete=False, suffix=input_suffix)
+    temp_output = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
+
+    temp_input_path = temp_input.name
+    temp_output_path = temp_output.name
+
+    try:
+        input_file.seek(0)
+        temp_input.write(input_file.read())
+        temp_input.flush()
+        temp_input.close()
+        temp_output.close()
+
+        command = [
+            "ffmpeg",
+            "-y",
+            "-i", temp_input_path,
+            "-ac", "1",
+            "-ar", "16000",
+            "-sample_fmt", "s16",
+            temp_output_path,
+        ]
+
+        result = subprocess.run(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            timeout=180,
+        )
+
+        if result.returncode != 0:
+            raise RuntimeError(
+                "Audio WAV conversion failed. "
+                f"FFmpeg error: {result.stderr[-1200:]}"
+            )
+
+        if not os.path.exists(temp_output_path) or os.path.getsize(temp_output_path) <= 44:
+            raise RuntimeError("Audio WAV conversion produced an empty/invalid WAV file.")
+
+        return temp_output_path
+
+    except FileNotFoundError:
+        raise RuntimeError("FFmpeg is not installed. Install it using: sudo apt install ffmpeg")
+
+    finally:
+        try:
+            if os.path.exists(temp_input_path):
+                os.remove(temp_input_path)
+        except Exception:
+            pass
+
+
 # ============================================================
 # SARVAM STT
 # ============================================================
@@ -734,6 +877,93 @@ def align_features(raw_features):
         aligned[key] = safe_float(value)
 
     return aligned
+
+
+
+def sort_pca_component_keys(components):
+    """
+    Sort PCA component keys in PC1, PC2, ... PC24 order.
+    """
+    def key_order(key):
+        key_str = str(key).strip().lower()
+        if key_str.startswith("pc") and key_str[2:].isdigit():
+            return int(key_str[2:])
+        return 999
+
+    return sorted(components.keys(), key=key_order)
+
+
+def pick_pca_components(payload):
+    """
+    Return PCA components as a dict because the voice classifier API expects:
+        {"features": {"PC1": value, "PC2": value, ...}}
+
+    Supports:
+      {"components": {"PC1": ...}}
+      {"data": {"components": {"PC1": ...}}}
+    """
+    if not isinstance(payload, dict):
+        return {}
+
+    components = payload.get("components")
+
+    if not isinstance(components, dict):
+        data = payload.get("data")
+        if isinstance(data, dict):
+            components = data.get("components")
+
+    if not isinstance(components, dict):
+        return {}
+
+    ordered = {}
+    for key in sort_pca_component_keys(components):
+        try:
+            ordered[str(key)] = float(components[key])
+        except Exception:
+            return {}
+
+    return ordered
+
+
+def pick_pca_features(payload):
+    """
+    Extract PCA features as a list for DB storage/counting.
+    The classifier API still receives the original components dict.
+    """
+    components = pick_pca_components(payload)
+    if components:
+        return [components[key] for key in sort_pca_component_keys(components)]
+
+    if not isinstance(payload, dict):
+        return []
+
+    candidates = [
+        payload.get("pca_features"),
+        payload.get("features"),
+        payload.get("reduced_features"),
+        payload.get("pca_vector"),
+        payload.get("vector"),
+    ]
+
+    data = payload.get("data")
+    if isinstance(data, dict):
+        candidates.extend([
+            data.get("pca_features"),
+            data.get("features"),
+            data.get("reduced_features"),
+            data.get("pca_vector"),
+            data.get("vector"),
+        ])
+
+    for candidate in candidates:
+        if isinstance(candidate, list):
+            try:
+                return [float(item) for item in candidate]
+            except Exception:
+                return []
+
+    return []
+
 
 
 def normalize_text(text):
@@ -893,47 +1123,186 @@ def post_face_score(face_vector):
 
 
 def post_voice_extract(audio_file):
-    url = normalize_endpoint_url(env_value("VOICE_EXTRACT_URL", "http://88.222.12.15:8013/extract"), "/extract")
+    """
+    Browser records audio as WebM/Opus. Most acoustic feature APIs expect WAV.
+    So we convert the uploaded audio to WAV before sending it to the extraction API.
+    """
+    url = normalize_endpoint_url(
+        env_value("VOICE_EXTRACT_URL", "http://88.222.12.15:5800/extract"),
+        "/extract",
+    )
+
     api_key = env_value("VOICE_FEATURE_EXTRACT_API_KEY") or env_value("AUDIO_API_KEY")
 
     if not api_key:
         raise RuntimeError("VOICE_FEATURE_EXTRACT_API_KEY missing")
 
-    headers = build_api_headers(api_key)
+    wav_path = ""
 
-    audio_file.seek(0)
-    files = {
-        "file": (
-            getattr(audio_file, "name", "audio.wav"),
-            audio_file,
-            getattr(audio_file, "content_type", "audio/wav") or "audio/wav",
-        )
-    }
+    try:
+        wav_path = convert_audio_to_wav(audio_file)
 
-    start = time.time()
-    resp = requests.post(url, headers=headers, files=files, timeout=(30, 900))
-    latency = seconds(start)
+        headers = build_api_headers(api_key)
 
-    api_raise(resp, "Voice feature extraction")
-    return resp.json(), latency
+        with open(wav_path, "rb") as wav_file:
+            files = {
+                "file": (
+                    "phonation.wav",
+                    wav_file,
+                    "audio/wav",
+                )
+            }
+
+            start = time.time()
+            resp = requests.post(
+                url,
+                headers=headers,
+                files=files,
+                timeout=(30, 900),
+            )
+            latency = seconds(start)
+
+        api_raise(resp, "Voice feature extraction")
+        return resp.json(), latency
+
+    finally:
+        try:
+            if wav_path and os.path.exists(wav_path):
+                os.remove(wav_path)
+        except Exception:
+            pass
 
 
-def post_voice_score(voice_features):
-    url = normalize_endpoint_url(env_value("VOICE_SCORE_URL", "http://88.222.12.15:9100/predict"), "/predict")
-    api_key = env_value("VOICE_FEATURE_TO_MH") or env_value("AUDIO_API_KEY") or env_value("API_KEY")
+def post_voice_pca(raw_voice_features):
+    """
+    Send 6373 raw voice features to PCA API.
+    PCA API returns 24 reduced features.
+    """
+    url = normalize_endpoint_url(
+        env_value("VOICE_PCA_URL", "http://88.222.12.15:5900/process"),
+        "/process",
+    )
+
+    api_key = (
+        env_value("VOICE_PCA_API_KEY")
+        or env_value("VOICE_FEATURE_TO_MH")
+        or env_value("AUDIO_API_KEY")
+        or env_value("API_KEY")
+    )
+
+    if not url:
+        raise RuntimeError("VOICE_PCA_URL missing in settings.py/.env")
 
     if not api_key:
-        raise RuntimeError("VOICE_FEATURE_TO_MH missing")
+        raise RuntimeError("VOICE_PCA_API_KEY missing in settings.py/.env")
+
+    if not isinstance(raw_voice_features, dict):
+        raise RuntimeError("PCA input must be a dictionary of 6373 voice features.")
+
+    if len(raw_voice_features) != 6373:
+        raise RuntimeError(
+            f"PCA input must contain exactly 6373 features. Received {len(raw_voice_features)}."
+        )
 
     headers = build_api_headers(api_key)
     headers["Content-Type"] = "application/json"
 
     start = time.time()
-    resp = requests.post(url, headers=headers, json={"features": voice_features}, timeout=(30, 900))
-    latency = seconds(start)
 
-    api_raise(resp, "Voice scoring")
-    return resp.json(), latency
+    payloads = [
+        {"features": raw_voice_features},
+        {"voice_features": raw_voice_features},
+        {"raw_features": raw_voice_features},
+    ]
+
+    last_error = None
+
+    for payload in payloads:
+        try:
+            resp = requests.post(url, headers=headers, json=payload, timeout=(30, 900))
+            latency = seconds(start)
+
+            if resp.ok:
+                return resp.json(), latency
+
+            try:
+                last_error = resp.json()
+            except Exception:
+                last_error = resp.text[:500]
+
+        except requests.exceptions.RequestException as exc:
+            last_error = str(exc)
+
+    raise RuntimeError(f"Voice PCA pipeline failed. Last error: {last_error}")
+
+
+def post_voice_score(pca_components):
+    """
+    Send PCA components to the Voice Classifier API.
+
+    Swagger-confirmed API format:
+        POST /predict
+        Body:
+        {
+            "PC1": value,
+            "PC2": value,
+            ...
+            "PC24": value
+        }
+
+    Important:
+        Do NOT wrap the payload inside {"features": ...}
+    """
+    url = normalize_endpoint_url(
+        env_value("VOICE_SCORE_URL", "http://88.222.212.15:5600/predict"),
+        "/predict",
+    )
+
+    api_key = (
+        env_value("VOICE_FEATURE_TO_MH")
+        or env_value("VOICE_SCORE_API_KEY")
+        or env_value("AUDIO_API_KEY")
+        or env_value("API_KEY")
+    )
+
+    if not url:
+        raise RuntimeError("VOICE_SCORE_URL missing in settings.py/.env")
+
+    if not api_key:
+        raise RuntimeError("VOICE_FEATURE_TO_MH or VOICE_SCORE_API_KEY missing in settings.py/.env")
+
+    if not isinstance(pca_components, dict):
+        raise RuntimeError("Voice Score API expects PCA components as a dictionary.")
+
+    if len(pca_components) != 24:
+        raise RuntimeError(
+            f"Voice Score API expects exactly 24 PCA components. Received {len(pca_components)}."
+        )
+
+    # Ensure body contains PC1..PC24 as top-level JSON keys.
+    payload = {}
+    for key in sort_pca_component_keys(pca_components):
+        payload[str(key)] = float(pca_components[key])
+
+    headers = build_api_headers(api_key)
+    headers["Content-Type"] = "application/json"
+    headers["accept"] = "application/json"
+
+    start = time.time()
+
+    try:
+        resp = requests.post(
+            url,
+            headers=headers,
+            json=payload,
+            timeout=(30, 900),
+        )
+        latency = seconds(start)
+        api_raise(resp, "Voice scoring")
+        return resp.json(), latency
+
+    except requests.exceptions.RequestException as exc:
+        raise RuntimeError(f"Voice scoring request failed. URL: {url}. Error: {exc}")
 
 
 def post_text_extract(transcript):
@@ -1069,22 +1438,262 @@ def get_or_create_audio_scenario(scenario_id=""):
     return scenario
 
 
+def make_json_safe(value):
+    """
+    PostgreSQL JSONField should not receive Decimal, UUID, datetime, or model objects directly.
+    This helper converts nested values into JSON-safe values before saving.
+    """
+    if isinstance(value, Decimal):
+        return float(value)
+
+    if isinstance(value, uuid.UUID):
+        return str(value)
+
+    if hasattr(value, "isoformat"):
+        try:
+            return value.isoformat()
+        except Exception:
+            pass
+
+    if isinstance(value, dict):
+        return {str(key): make_json_safe(item) for key, item in value.items()}
+
+    if isinstance(value, list):
+        return [make_json_safe(item) for item in value]
+
+    if isinstance(value, tuple):
+        return [make_json_safe(item) for item in value]
+
+    return value
+
+
+
+def create_pca_pipeline_result_safe(
+    *,
+    screening_session,
+    phonation_feature,
+    raw_features,
+    pca_response,
+    pca_features,
+    pca_components=None,
+    latency=None,
+):
+    """
+    Save PCA pipeline result safely.
+
+    Important:
+      - pca_pipeline_results.screening_session_id is NOT NULL in your DB
+      - so screening_session must always be passed
+      - raw input is 6373 voice features
+      - PCA output is 24 components/features
+    """
+    model_fields = {field.name for field in PcaPipelineResult._meta.fields}
+
+    raw_feature_count = len(raw_features) if isinstance(raw_features, dict) else 0
+    pca_feature_count = len(pca_features) if isinstance(pca_features, list) else 0
+    pca_component_count = len(pca_components) if isinstance(pca_components, dict) else 0
+
+    possible_values = {
+        # Required relation in your DB
+        "screening_session": screening_session,
+
+        # Optional relation depending on your model
+        "phonation_feature": phonation_feature,
+        "feature": phonation_feature,
+
+        # Counts
+        "input_feature_count": raw_feature_count,
+        "raw_feature_count": raw_feature_count,
+        "output_feature_count": pca_feature_count or pca_component_count,
+        "pca_feature_count": pca_feature_count,
+        "pca_component_count": pca_component_count,
+
+        # JSON payloads
+        "input_features_json": raw_features,
+        "raw_features_json": raw_features,
+        "pca_response_json": pca_response,
+        "response_json": pca_response,
+        "pca_components_json": pca_components or {},
+
+        # PCA values
+        "pca_features": pca_features,
+        "reduced_features": pca_features,
+        "pca_vector": pca_features,
+        "pca_components": pca_components or {},
+
+        # Timing/status
+        "processing_time_seconds": safe_decimal(latency, default=None),
+        "latency_seconds": safe_decimal(latency, default=None),
+        "pipeline_status": "completed",
+        "status": "completed",
+        "processed_at": timezone.now(),
+    }
+
+    data = {}
+
+    for field_name, value in possible_values.items():
+        if field_name not in model_fields:
+            continue
+
+        if field_name in ["screening_session", "phonation_feature", "feature"]:
+            data[field_name] = value
+        else:
+            data[field_name] = make_json_safe(value)
+
+    return PcaPipelineResult.objects.create(**data)
+
+
+
+def model_uuid_or_pk(instance):
+    if not instance:
+        return None
+
+    for field_name in [
+        "result_id",
+        "prediction_id",
+        "feature_id",
+        "media_id",
+        "session_id",
+        "attempt_id",
+        "text_parameter_id",
+        "transcript_id",
+        "id",
+        "pk",
+    ]:
+        value = getattr(instance, field_name, None)
+        if value:
+            return str(value)
+
+    return str(getattr(instance, "pk", ""))
+
+
+def result_score_summary(result_obj):
+    if not result_obj:
+        return {}
+
+    summary = {}
+
+    for field_name in [
+        "stress_score",
+        "depression_score",
+        "anxiety_score",
+        "speech_impairment_score",
+        "confidence_score",
+        "risk_label",
+        "api_version",
+        "processed_at",
+    ]:
+        if hasattr(result_obj, field_name):
+            value = getattr(result_obj, field_name)
+            if value is not None and value != "":
+                summary[field_name] = make_json_safe(value)
+
+    return summary
+
+
+def derive_confidence_from_result_and_payload(result_obj=None, payload=None, explicit_confidence=None):
+    """
+    Final fallback resolver for modality_results.confidence_score.
+
+    Priority:
+      1. explicit confidence passed to create_modality_result()
+      2. result_obj.confidence_score
+      3. payload.summary.confidence_score
+      4. payload.score_response confidence/probability keys
+      5. whole payload confidence/probability keys
+      6. fallback: 1.00 when API succeeded but no confidence is returned
+
+    The last fallback prevents NULL in modality_results when the model API gives
+    valid scores but no confidence field.
+    """
+    conf = normalize_confidence_value(explicit_confidence)
+    if conf is not None:
+        return conf
+
+    if result_obj is not None and hasattr(result_obj, "confidence_score"):
+        conf = normalize_confidence_value(getattr(result_obj, "confidence_score", None))
+        if conf is not None:
+            return conf
+
+    payload = payload or {}
+
+    if isinstance(payload, dict):
+        summary = payload.get("summary")
+        if isinstance(summary, dict):
+            conf = safe_confidence(summary)
+            if conf is not None:
+                return conf
+
+        score_response = payload.get("score_response")
+        if isinstance(score_response, dict):
+            conf = safe_confidence(score_response)
+            if conf is not None:
+                return conf
+
+        conf = safe_confidence(payload)
+        if conf is not None:
+            return conf
+
+        # API produced score_response but did not expose confidence.
+        # Store 1.00 as "accepted successful API result", instead of NULL.
+        if isinstance(score_response, dict) and score_response:
+            return Decimal("1.00")
+
+    return Decimal("1.00")
+
+
 def create_modality_result(*, session, modality, result_obj, payload, confidence=None):
-    kwargs = {
-        "screening_session": session,
-        "modality": modality,
-        "confidence_score": confidence,
-        "result_payload": payload,
+    """
+    Create or update one clean row per screening session + modality.
+
+    This keeps modality_results useful:
+      - modality = face / voice / text
+      - correct FK column filled
+      - confidence_score never stays NULL for successful results
+      - result_payload is JSON-safe
+      - avoids duplicate modality rows when user retries the same activity
+    """
+    modality = str(modality or "").strip().lower()
+
+    if modality not in ["face", "voice", "text"]:
+        raise ValueError(f"Invalid modality: {modality}")
+
+    final_confidence = derive_confidence_from_result_and_payload(
+        result_obj=result_obj,
+        payload=payload,
+        explicit_confidence=confidence,
+    )
+
+    safe_payload = make_json_safe(payload or {})
+    safe_payload["modality"] = modality
+    safe_payload["screening_session_id"] = str(session.screening_session_id)
+    safe_payload["linked_result_id"] = model_uuid_or_pk(result_obj)
+    safe_payload["result_summary"] = result_score_summary(result_obj)
+    safe_payload["resolved_confidence_score"] = make_json_safe(final_confidence)
+    safe_payload["saved_at"] = timezone.now().isoformat()
+
+    defaults = {
+        "confidence_score": final_confidence,
+        "result_payload": safe_payload,
+        "face_result": None,
+        "voice_result": None,
+        "text_result": None,
     }
 
     if modality == "face":
-        kwargs["face_result"] = result_obj
+        defaults["face_result"] = result_obj
     elif modality == "voice":
-        kwargs["voice_result"] = result_obj
+        defaults["voice_result"] = result_obj
     elif modality == "text":
-        kwargs["text_result"] = result_obj
+        defaults["text_result"] = result_obj
 
-    return ModalityResult.objects.create(**kwargs)
+    modality_result, created = ModalityResult.objects.update_or_create(
+        screening_session=session,
+        modality=modality,
+        defaults=defaults,
+    )
+
+    return modality_result
 
 
 def update_session_progress(session, *, current_activity, completed_count, status="processing"):
@@ -1285,6 +1894,13 @@ def upload_face_video(request):
             "vector_response": vector_response,
             "aligned_features": aligned_vector,
             "score_response": score_response,
+            "summary": {
+                "stress_score": make_json_safe(facial_result.stress_score),
+                "depression_score": make_json_safe(facial_result.depression_score),
+                "anxiety_score": make_json_safe(facial_result.anxiety_score),
+                "confidence_score": make_json_safe(facial_result.confidence_score),
+                "risk_label": facial_result.risk_label,
+            },
             "latency": {
                 "face_extract_post_s": extract_latency,
                 "face_vector_get_s": vector_latency,
@@ -1417,11 +2033,11 @@ def upload_voice_phonation(request):
 
         sound = get_or_create_phonation_sound(expected_label, expected_prompt)
 
-        if volume_score < 55:
+        if volume_score < 30:
             return JsonResponse({
                 "ok": False,
                 "passed": False,
-                "reason": "Voice strength too low.",
+                "reason": "Voice strength too low. Please speak a little louder and try again.",
             }, status=400)
 
         if hold_ms < 900:
@@ -1431,39 +2047,57 @@ def upload_voice_phonation(request):
                 "reason": "Sound was not held long enough.",
             }, status=400)
 
-        suffix = ".webm"
-        if audio_file.name and "." in audio_file.name:
-            suffix = "." + audio_file.name.split(".")[-1].lower()
+        # For vocal-cord phonation analysis, transcript verification is optional.
+        # Sustained sounds like आ, ई, ऊ, म are often not transcribed reliably by STT.
+        # Default: skip STT and continue to Voice Feature Extraction -> PCA -> Scoring.
+        use_stt_verification = str(
+            env_value("VOICE_PHONATION_USE_STT", "False")
+        ).strip().lower() in ["1", "true", "yes", "on"]
 
-        audio_file.seek(0)
-        transcription = transcribe_with_sarvam(
-            audio_file,
-            suffix=suffix,
-            language_code="unknown",
-        )
+        transcript = ""
+        language_code = "unknown"
+        transcription = {
+            "skipped": True,
+            "reason": "VOICE_PHONATION_USE_STT is False. Using acoustic feature pipeline only.",
+        }
 
-        transcript = transcription.get("transcript", "")
-        language_code = transcription.get("language_code", "unknown")
+        if use_stt_verification:
+            suffix = ".webm"
+            if audio_file.name and "." in audio_file.name:
+                suffix = "." + audio_file.name.split(".")[-1].lower()
 
-        matched = transcript_matches_expected(transcript, accepted_values) if accepted_values else True
+            audio_file.seek(0)
+            transcription = transcribe_with_sarvam(
+                audio_file,
+                suffix=suffix,
+                language_code="unknown",
+            )
 
-        if not matched:
-            media.metadata_json = {
-                **(media.metadata_json or {}),
-                "transcript": transcript,
-                "transcript_language": language_code,
-                "verification_status": "failed",
-                "verification_reason": f"Transcript did not match expected sound. Transcript: {transcript}",
-            }
-            media.save(update_fields=["metadata_json"])
+            transcript = transcription.get("transcript", "")
+            language_code = transcription.get("language_code", "unknown")
 
-            return JsonResponse({
-                "ok": False,
-                "passed": False,
-                "transcript": transcript,
-                "reason": media.metadata_json["verification_reason"],
-            }, status=400)
+            matched = transcript_matches_expected(transcript, accepted_values) if accepted_values else True
 
+            if not matched:
+                media.metadata_json = {
+                    **(media.metadata_json or {}),
+                    "transcript": transcript,
+                    "transcript_language": language_code,
+                    "verification_status": "failed",
+                    "verification_reason": f"Transcript did not match expected sound. Transcript: {transcript}",
+                }
+                media.save(update_fields=["metadata_json"])
+
+                return JsonResponse({
+                    "ok": False,
+                    "passed": False,
+                    "transcript": transcript,
+                    "reason": media.metadata_json["verification_reason"],
+                }, status=400)
+
+        # One row per sound per phonation session.
+        # If the user retries the same sound, update the existing row instead of crashing
+        # on unique constraint: phonation_session_id + sound_id.
         attempt, _ = PhonationAttempt.objects.update_or_create(
             phonation_session=phonation_session,
             sound=sound,
@@ -1483,7 +2117,22 @@ def upload_voice_phonation(request):
         raw_features = pick_feature_payload(extract_response)
         aligned_features = align_features(raw_features)
 
-        score_response, score_latency = post_voice_score(aligned_features)
+        if len(aligned_features) != 6373:
+            raise RuntimeError(
+                f"Voice Feature Extract API returned {len(aligned_features)} features. "
+                "Expected exactly 6373 features before PCA."
+            )
+
+        pca_response, pca_latency = post_voice_pca(aligned_features)
+        pca_components = pick_pca_components(pca_response)
+        pca_features = pick_pca_features(pca_response)
+
+        if len(pca_components) != 24:
+            raise RuntimeError(
+                f"PCA API returned {len(pca_components)} components. Expected exactly 24 components."
+            )
+
+        score_response, score_latency = post_voice_score(pca_components)
 
         audio_extract, _ = AudioExtractionResult.objects.update_or_create(
             attempt=attempt,
@@ -1511,6 +2160,16 @@ def upload_voice_phonation(request):
             },
         )
 
+        pca_result = create_pca_pipeline_result_safe(
+            screening_session=session,
+            phonation_feature=phonation_feature,
+            raw_features=aligned_features,
+            pca_response=pca_response,
+            pca_features=pca_features,
+            pca_components=pca_components,
+            latency=pca_latency,
+        )
+
         voice_result, _ = VoiceAnalysisResult.objects.update_or_create(
             feature=phonation_feature,
             defaults={
@@ -1533,12 +2192,26 @@ def upload_voice_phonation(request):
             "transcript": transcript,
             "transcript_language": language_code,
             "verification_status": "passed",
-            "verification_reason": "Voice passed strength, hold, and transcript verification.",
+            "verification_reason": "Voice passed strength and hold validation. Acoustic feature pipeline completed.",
             "extract_response": extract_response,
+            "raw_feature_count": len(aligned_features),
             "aligned_features": aligned_features,
+            "pca_response": pca_response,
+            "pca_component_count": len(pca_components),
+            "pca_components": pca_components,
+            "pca_feature_count": len(pca_features),
+            "pca_features": pca_features,
+            "pca_result_id": str(getattr(pca_result, "pk", "")),
             "score_response": score_response,
+            "summary": {
+                "stress_score": make_json_safe(voice_result.stress_score),
+                "depression_score": make_json_safe(voice_result.depression_score),
+                "speech_impairment_score": make_json_safe(voice_result.speech_impairment_score),
+                "confidence_score": make_json_safe(voice_result.confidence_score),
+            },
             "latency": {
                 "voice_extract_post_s": extract_latency,
+                "voice_pca_post_s": pca_latency,
                 "voice_score_post_s": score_latency,
             },
         }
@@ -1551,14 +2224,15 @@ def upload_voice_phonation(request):
             confidence=voice_result.confidence_score,
         )
 
-        phonation_session.session_status = "completed"
-        phonation_session.completed_at = timezone.now()
-        phonation_session.save()
+        # Keep the phonation session open while the frontend sends 7 separate sounds.
+        # The frontend moves to the scenario page only after all 7 sounds are successfully processed.
+        phonation_session.session_status = "processing"
+        phonation_session.save(update_fields=["session_status"])
 
         update_session_progress(
             session,
-            current_activity="scenario_voice_response",
-            completed_count=2,
+            current_activity="voice_phonation",
+            completed_count=1,
             status="processing",
         )
 
@@ -1571,6 +2245,9 @@ def upload_voice_phonation(request):
             "file_url": media.cdn_url,
             "storage_provider": media.storage_provider,
             "transcript": transcript,
+            "raw_feature_count": len(aligned_features),
+            "pca_feature_count": len(pca_features),
+            "pca_result_id": str(getattr(pca_result, "pk", "")),
             "voice_score": score_response,
             "redirect_url": "/assessments/scenario-voice-response/",
         })
@@ -1689,6 +2366,12 @@ def upload_scenario_voice_response(request):
             "extract_response": extract_response,
             "aligned_features": aligned_features,
             "score_response": score_response,
+            "summary": {
+                "stress_score": make_json_safe(text_result.stress_score),
+                "depression_score": make_json_safe(text_result.depression_score),
+                "anxiety_score": make_json_safe(text_result.anxiety_score),
+                "confidence_score": make_json_safe(text_result.confidence_score),
+            },
             "latency": {
                 "text_extract_post_s": extract_latency,
                 "text_score_post_s": score_latency,
@@ -1776,7 +2459,7 @@ def run_multimodal_fusion(request):
 
         combined_features = {
             "face_features": face_payload.get("aligned_features", {}),
-            "voice_features": voice_payload.get("aligned_features", {}),
+            "voice_features": voice_payload.get("pca_features") or voice_payload.get("aligned_features", {}),
             "text_features": text_payload.get("aligned_features", {}),
         }
 
@@ -1797,7 +2480,7 @@ def run_multimodal_fusion(request):
                 "final_prediction_json": {
                     "combined_features_count": {
                         "face": len(combined_features["face_features"]) if isinstance(combined_features["face_features"], dict) else 0,
-                        "voice": len(combined_features["voice_features"]) if isinstance(combined_features["voice_features"], dict) else 0,
+                        "voice": len(combined_features["voice_features"]) if isinstance(combined_features["voice_features"], (dict, list)) else 0,
                         "text": len(combined_features["text_features"]) if isinstance(combined_features["text_features"], dict) else 0,
                     },
                     "score_response": fusion_response,

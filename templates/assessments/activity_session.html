@@ -24,15 +24,19 @@
 
           <h1 class="activity-title" id="activityTitle">Loading activity...</h1>
 
-          <p class="activity-description" id="activityDescription">
-            Please wait while MindSpace selects one activity for you.
-          </p>
-
-          <div class="prompt-box">
-            <span>Prompt</span>
-            <p id="activityPrompt">
-              Loading prompt...
+          <div class="story-start-card">
+            <span>What to do</span>
+            <p id="activityStoryStart">
+              Look at the image set and continue the story from the hook moment.
             </p>
+          </div>
+
+          <div class="story-strip-section" id="storyStripSection">
+            <div class="story-strip-head">
+              <span>Story image set</span>
+              <small>Observe all 4 images before recording</small>
+            </div>
+            <div class="story-grid" id="storyImageGrid"></div>
           </div>
 
           <div class="instructions-section">
@@ -42,11 +46,6 @@
               <li>Record your answer clearly.</li>
               <li>Submit the activity to continue.</li>
             </ol>
-          </div>
-
-          <div class="mini-activity-list">
-            <div class="mini-title">Available activity pool</div>
-            <div class="mini-grid" id="miniActivityGrid"></div>
           </div>
 
           <div class="privacy-note">
@@ -135,15 +134,15 @@
 
 .activity-container {
   width: 100%;
-  max-width: 1120px;
+  max-width: 1320px;
   margin: 0 auto;
-  padding: 18px 20px;
+  padding: 16px 18px;
   box-sizing: border-box;
 }
 
 .activity-layout {
   display: grid;
-  grid-template-columns: 0.9fr 1.1fr;
+  grid-template-columns: minmax(560px, 1.25fr) minmax(400px, 0.85fr);
   gap: 18px;
   align-items: start;
 }
@@ -151,7 +150,7 @@
 /* LEFT STACK */
 .activity-stack-wrap {
   position: relative;
-  min-height: 560px;
+  min-height: 590px;
 }
 
 .stack-bg-card {
@@ -191,7 +190,7 @@
   position: relative;
   z-index: 5;
   padding: 20px;
-  min-height: 560px;
+  min-height: 590px;
   box-sizing: border-box;
 }
 
@@ -240,28 +239,99 @@
   font-size: 0.88rem;
 }
 
-.prompt-box {
-  margin-top: 15px;
-  padding: 13px;
+.story-start-card {
+  margin-top: 14px;
+  padding: 14px 15px;
   border-radius: 16px;
   background: #f8fafc;
   border: 1px solid var(--ms-border);
   border-left: 4px solid var(--ms-green);
 }
 
-.prompt-box span {
+.story-start-card span {
   display: block;
   color: var(--ms-green-dark);
-  font-weight: 900;
   font-size: 0.76rem;
-  margin-bottom: 6px;
+  font-weight: 900;
+  margin-bottom: 7px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
-.prompt-box p {
+.story-start-card p {
   margin: 0;
+  color: #475569;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  font-weight: 650;
+}
+
+
+
+.story-strip-section {
+  margin-top: 15px;
+  padding: 14px;
+  border-radius: 18px;
+  background: #ffffff;
+  border: 1px solid var(--ms-border);
+}
+
+.story-strip-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.story-strip-head span {
+  color: var(--ms-text);
+  font-size: 0.84rem;
+  font-weight: 900;
+}
+
+.story-strip-head small {
   color: var(--ms-muted);
-  font-size: 0.86rem;
-  line-height: 1.5;
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.story-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.story-frame {
+  min-width: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #f8fafc;
+  border: 1px solid var(--ms-border);
+  position: relative;
+}
+
+.story-frame img {
+  width: 100%;
+  height: 150px;
+  object-fit: cover;
+  display: block;
+}
+
+.story-frame span {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.74);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.68rem;
+  font-weight: 900;
 }
 
 .instructions-section {
@@ -282,45 +352,6 @@
   line-height: 1.65;
 }
 
-.mini-activity-list {
-  margin-top: 15px;
-  padding: 12px;
-  border-radius: 16px;
-  background: #f8fafc;
-  border: 1px solid var(--ms-border);
-}
-
-.mini-title {
-  color: var(--ms-text);
-  font-size: 0.78rem;
-  font-weight: 900;
-  margin-bottom: 9px;
-}
-
-.mini-grid {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 7px;
-}
-
-.mini-dot {
-  height: 30px;
-  border-radius: 10px;
-  border: 1px solid var(--ms-border);
-  background: #ffffff;
-  color: var(--ms-muted);
-  font-size: 0.72rem;
-  font-weight: 900;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.mini-dot.active {
-  background: var(--ms-green);
-  color: #ffffff;
-  border-color: var(--ms-green);
-}
 
 .privacy-note {
   margin-top: 15px;
@@ -335,7 +366,9 @@
 
 /* RIGHT CARD */
 .recording-card {
-  padding: 20px;
+  padding: 18px;
+  max-width: 540px;
+  margin: 0 auto;
 }
 
 .recording-header {
@@ -365,6 +398,7 @@
   position: relative;
   width: 100%;
   aspect-ratio: 16 / 9;
+  max-height: 285px;
   background: #0f172a;
   border-radius: 18px;
   overflow: hidden;
@@ -537,6 +571,14 @@
     grid-template-columns: repeat(5, 1fr);
   }
 
+  .story-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .story-frame img {
+    height: 130px;
+  }
+
   .control-buttons {
     grid-template-columns: 1fr;
   }
@@ -568,144 +610,193 @@
 
   const activityPool = [
     {
-      id: "mood_check",
+      id: "story_lost_train",
       badge: "Activity 1",
-      title: "Mood Check-In",
-      description: "Record a natural face-video response about your current emotional state.",
-      prompt: "How are you feeling right now? Speak naturally and keep your face visible.",
+      title: "The Missed Train",
+      storyStart: "A student reaches the railway platform just as the train begins to move. Their bag is heavy, their phone battery is low, and someone important is waiting for them at the next station. The train doors are still visible for a few seconds... What happens next?",
+      storyImages: [
+        "{% static 'images/activities/story/set-1/1.png' %}",
+        "{% static 'images/activities/story/set-1/2.png' %}",
+        "{% static 'images/activities/story/set-1/3.png' %}",
+        "{% static 'images/activities/story/set-1/4.png' %}"
+      ],
       instructions: [
-        "Sit comfortably and keep your face visible.",
-        "Allow camera and microphone permission.",
-        "Record for at least 2 minutes 30 seconds.",
-        "Submit after your recording is ready."
+        "Observe all 4 images carefully before recording.",
+        "Continue the story from the hook moment.",
+        "Explain what the character thinks, feels, and decides.",
+        "Record for at least 2 minutes 30 seconds."
       ]
     },
     {
-      id: "daily_reflection",
+      id: "story_focus_room",
       badge: "Activity 2",
-      title: "Daily Reflection",
-      description: "Share a reflection about your day and your energy level.",
-      prompt: "Tell us one good thing and one difficult thing from your day.",
+      title: "The Focus Room",
+      storyStart: "A character sits down to study in a quiet room. For a moment everything feels clear, but then messages, memories, and small noises start pulling their attention away. They look at the four scenes and realize one detail may help them focus again... Continue the story.",
+      storyImages: [
+        "{% static 'images/activities/story/set-2/1.png' %}",
+        "{% static 'images/activities/story/set-2/2.png' %}",
+        "{% static 'images/activities/story/set-2/3.png' %}",
+        "{% static 'images/activities/story/set-2/4.png' %}"
+      ],
       instructions: [
-        "Keep your face visible in the camera.",
-        "Speak clearly and naturally.",
-        "Record for at least 2 minutes 30 seconds.",
-        "Submit after your recording is ready."
+        "Use the images as story clues.",
+        "Describe what distracts the character.",
+        "Explain how the character tries to regain focus.",
+        "Record for at least 2 minutes 30 seconds."
       ]
     },
     {
-      id: "stress_signal",
+      id: "story_city_night",
       badge: "Activity 3",
-      title: "Stress Signal",
-      description: "This activity helps understand possible signs of stress through expression and voice.",
-      prompt: "What is something that made you feel stressed recently? Explain calmly.",
+      title: "The City Night",
+      storyStart: "At night, a character stands near a window and watches the city lights. They receive a message that changes their mood. They do not reply immediately. Instead, they look outside and begin thinking about a choice they must make tomorrow... What happens next?",
+      storyImages: [
+        "{% static 'images/activities/story/set-3/1.png' %}",
+        "{% static 'images/activities/story/set-3/2.png' %}",
+        "{% static 'images/activities/story/set-3/3.png' %}",
+        "{% static 'images/activities/story/set-3/4.png' %}"
+      ],
       instructions: [
-        "Take one deep breath before starting.",
-        "Speak in your normal voice.",
-        "Record for at least 2 minutes 30 seconds.",
-        "Submit only after checking your recording is complete."
+        "Describe the mood of the scene.",
+        "Connect each image to one part of the story.",
+        "Explain the choice the character is facing.",
+        "Record for at least 2 minutes 30 seconds."
       ]
     },
     {
-      id: "gratitude_moment",
+      id: "story_unknown_call",
       badge: "Activity 4",
-      title: "Gratitude Moment",
-      description: "Talk about something positive to support emotional reflection.",
-      prompt: "Name one thing you are grateful for today and explain why.",
+      title: "The Unknown Call",
+      storyStart: "A character gets a call from an unknown number. They almost ignore it, but something in the moment makes them answer. The voice on the other side says only one sentence, and then the call drops... Continue the story using the images.",
+      storyImages: [
+        "{% static 'images/activities/story/set-4/1.png' %}",
+        "{% static 'images/activities/story/set-4/2.png' %}",
+        "{% static 'images/activities/story/set-4/3.png' %}",
+        "{% static 'images/activities/story/set-4/4.png' %}"
+      ],
       instructions: [
-        "Look toward the camera.",
-        "Speak calmly.",
-        "Record for at least 2 minutes 30 seconds.",
-        "Submit to move forward."
+        "Start from the phone call moment.",
+        "Use all 4 images in order.",
+        "Describe the character’s reaction and next step.",
+        "Record for at least 2 minutes 30 seconds."
       ]
     },
     {
-      id: "energy_level",
+      id: "story_rainy_day",
       badge: "Activity 5",
-      title: "Energy Level",
-      description: "Share your current physical and mental energy level.",
-      prompt: "How much energy do you have today: low, medium, or high? Explain briefly.",
+      title: "The Rainy Day Decision",
+      storyStart: "It starts raining when the character is already late. They can either go back home, wait, or keep moving. Each image shows a clue about what they might be feeling. Just before they decide, they notice someone standing alone nearby... What happens next?",
+      storyImages: [
+        "{% static 'images/activities/story/set-5/1.png' %}",
+        "{% static 'images/activities/story/set-5/2.png' %}",
+        "{% static 'images/activities/story/set-5/3.png' %}",
+        "{% static 'images/activities/story/set-5/4.png' %}"
+      ],
       instructions: [
-        "Allow camera and microphone permission.",
-        "Keep your answer simple and clear.",
-        "Record for at least 2 minutes 30 seconds.",
-        "Submit when done."
+        "Explain the problem in the story.",
+        "Describe the character’s emotion.",
+        "Use the final image as the turning point.",
+        "Record for at least 2 minutes 30 seconds."
       ]
     },
     {
-      id: "sleep_reflection",
+      id: "story_hidden_note",
       badge: "Activity 6",
-      title: "Sleep Reflection",
-      description: "Reflect on your recent sleep quality and how it affected your day.",
-      prompt: "How was your sleep last night, and how did it affect your mood today?",
+      title: "The Hidden Note",
+      storyStart: "While cleaning a desk, a character finds a folded note hidden inside an old book. The note has no name, only a short line: 'Meet me where the lights disappear.' The character looks at the images and starts connecting the clues... Continue the story.",
+      storyImages: [
+        "{% static 'images/activities/story/set-6/1.png' %}",
+        "{% static 'images/activities/story/set-6/2.png' %}",
+        "{% static 'images/activities/story/set-6/3.png' %}",
+        "{% static 'images/activities/story/set-6/4.png' %}"
+      ],
       instructions: [
-        "Sit in a quiet place.",
-        "Speak naturally.",
-        "Record for at least 2 minutes 30 seconds.",
-        "Submit the recording to continue."
+        "Use the note as the beginning.",
+        "Create a clear middle and next action.",
+        "Explain what the character feels about the note.",
+        "Record for at least 2 minutes 30 seconds."
       ]
     },
     {
-      id: "focus_check",
+      id: "story_bridge_choice",
       badge: "Activity 7",
-      title: "Focus Check",
-      description: "Share how focused or distracted you feel right now.",
-      prompt: "Are you able to focus today, or are you feeling distracted? Explain shortly.",
+      title: "The Bridge Choice",
+      storyStart: "A character reaches a bridge and stops halfway. Behind them is something familiar. Ahead of them is something uncertain. The four images show pieces of their memory and their possible future. They take one step, then pause again... What do they do next?",
+      storyImages: [
+        "{% static 'images/activities/story/set-7/1.png' %}",
+        "{% static 'images/activities/story/set-7/2.png' %}",
+        "{% static 'images/activities/story/set-7/3.png' %}",
+        "{% static 'images/activities/story/set-7/4.png' %}"
+      ],
       instructions: [
-        "Keep your face inside the frame.",
-        "Use your normal speaking speed.",
-        "Record for at least 2 minutes 30 seconds.",
-        "Submit after completing the response."
+        "Describe the character’s conflict.",
+        "Use each image as a story clue.",
+        "Explain the decision and why it matters.",
+        "Record for at least 2 minutes 30 seconds."
       ]
     },
     {
-      id: "calm_breath",
+      id: "story_last_message",
       badge: "Activity 8",
-      title: "Calm Breathing Reflection",
-      description: "This activity checks calmness after a simple breathing moment.",
-      prompt: "Take a slow breath, then say how calm you feel right now.",
+      title: "The Last Message",
+      storyStart: "A character opens an old chat and sees a message they never replied to. They remember the day shown in the images. Now they have a chance to respond, but they are not sure what to say. They type one word, delete it, and think again... Continue the story.",
+      storyImages: [
+        "{% static 'images/activities/story/set-8/1.png' %}",
+        "{% static 'images/activities/story/set-8/2.png' %}",
+        "{% static 'images/activities/story/set-8/3.png' %}",
+        "{% static 'images/activities/story/set-8/4.png' %}"
+      ],
       instructions: [
-        "Take one slow breath before speaking.",
-        "Do not force your voice.",
-        "Record for at least 2 minutes 30 seconds.",
-        "Submit to continue."
+        "Explain what the old message means.",
+        "Describe the memory connected to the images.",
+        "Tell what the character finally chooses to write.",
+        "Record for at least 2 minutes 30 seconds."
       ]
     },
     {
-      id: "social_feeling",
+      id: "story_empty_street",
       badge: "Activity 9",
-      title: "Social Feeling",
-      description: "Reflect on your recent social comfort and connection.",
-      prompt: "Did you feel connected or isolated today? Share briefly.",
+      title: "The Empty Street",
+      storyStart: "A character walks through an almost empty street. Everything seems normal until they notice the same person appearing in more than one place. They are not sure if it is real, a coincidence, or their imagination. The images hold the clue... What happens next?",
+      storyImages: [
+        "{% static 'images/activities/story/set-9/1.png' %}",
+        "{% static 'images/activities/story/set-9/2.png' %}",
+        "{% static 'images/activities/story/set-9/3.png' %}",
+        "{% static 'images/activities/story/set-9/4.png' %}"
+      ],
       instructions: [
-        "Speak honestly.",
-        "Keep your answer meaningful.",
-        "Record for at least 2 minutes 30 seconds.",
-        "Submit when your answer is recorded."
+        "Build suspense slowly.",
+        "Use all images to explain the clue.",
+        "Describe the character’s thoughts and actions.",
+        "Record for at least 2 minutes 30 seconds."
       ]
     },
     {
-      id: "self_support",
+      id: "story_self_support",
       badge: "Activity 10",
-      title: "Self-Support Thought",
-      description: "Share one supportive thought for yourself.",
-      prompt: "Say one kind or supportive sentence you want to tell yourself today.",
+      title: "The Supportive Thought",
+      storyStart: "A character is about to give up on something important. They look at the four scenes and remember one sentence someone once told them. That sentence changes the way they see the problem. They take a breath and make one small move... Continue the story.",
+      storyImages: [
+        "{% static 'images/activities/story/set-10/1.png' %}",
+        "{% static 'images/activities/story/set-10/2.png' %}",
+        "{% static 'images/activities/story/set-10/3.png' %}",
+        "{% static 'images/activities/story/set-10/4.png' %}"
+      ],
       instructions: [
-        "Look at the camera if comfortable.",
-        "Say your sentence clearly.",
-        "Record for at least 2 minutes 30 seconds.",
-        "Submit to go to the next page."
+        "Start from the difficult moment.",
+        "Explain the supportive thought.",
+        "Use the images to show how the mood changes.",
+        "Record for at least 2 minutes 30 seconds."
       ]
     }
   ];
 
   const activityBadge = document.getElementById("activityBadge");
   const activityTitle = document.getElementById("activityTitle");
-  const activityDescription = document.getElementById("activityDescription");
-  const activityPrompt = document.getElementById("activityPrompt");
   const activityInstructions = document.getElementById("activityInstructions");
-  const miniActivityGrid = document.getElementById("miniActivityGrid");
   const currentTaskTitle = document.getElementById("currentTaskTitle");
+  const storyImageGrid = document.getElementById("storyImageGrid");
+  const activityStoryStart = document.getElementById("activityStoryStart");
 
   const videoPreview = document.getElementById("videoPreview");
   const videoPlaceholder = document.getElementById("videoPlaceholder");
@@ -737,8 +828,7 @@
 
     activityBadge.textContent = selectedActivity.badge;
     activityTitle.textContent = selectedActivity.title;
-    activityDescription.textContent = selectedActivity.description;
-    activityPrompt.textContent = selectedActivity.prompt;
+    activityStoryStart.textContent = selectedActivity.storyStart;
     currentTaskTitle.textContent = selectedActivity.title;
 
     activityInstructions.innerHTML = "";
@@ -748,20 +838,22 @@
       activityInstructions.appendChild(li);
     });
 
-    miniActivityGrid.innerHTML = "";
-    activityPool.forEach(function (activity, index) {
-      const dot = document.createElement("div");
-      dot.className = "mini-dot";
-      dot.textContent = index + 1;
+    storyImageGrid.innerHTML = "";
+    selectedActivity.storyImages.forEach(function (src, index) {
+      const frame = document.createElement("div");
+      frame.className = "story-frame";
 
-      if (activity.id === selectedActivity.id) {
-        dot.classList.add("active");
-        dot.title = "Selected: " + activity.title;
-      } else {
-        dot.title = activity.title;
-      }
+      const number = document.createElement("span");
+      number.textContent = index + 1;
 
-      miniActivityGrid.appendChild(dot);
+      const image = document.createElement("img");
+      image.src = src;
+      image.alt = selectedActivity.title + " image " + (index + 1);
+      image.loading = "lazy";
+
+      frame.appendChild(image);
+      frame.appendChild(number);
+      storyImageGrid.appendChild(frame);
     });
   }
 
@@ -856,9 +948,9 @@
     try {
       stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          width: { ideal: 854 },
-          height: { ideal: 480 },
-          frameRate: { ideal: 24, max: 30 }
+          width: { ideal: 640 },
+          height: { ideal: 360 },
+          frameRate: { ideal: 15, max: 20 }
         },
         audio: true
       });
@@ -873,8 +965,8 @@
 
       mediaRecorder = new MediaRecorder(stream, {
         mimeType: mimeType,
-        videoBitsPerSecond: 700000,
-        audioBitsPerSecond: 64000
+        videoBitsPerSecond: 450000,
+        audioBitsPerSecond: 48000
       });
 
       mediaRecorder.ondataavailable = function (event) {
@@ -993,7 +1085,8 @@
 
     formData.append("activity_id", selectedActivity.id);
     formData.append("activity_title", selectedActivity.title);
-    formData.append("activity_prompt", selectedActivity.prompt);
+    formData.append("activity_prompt", selectedActivity.storyStart);
+    formData.append("story_images", JSON.stringify(selectedActivity.storyImages));
 
     try {
       const response = await fetch("{% url 'upload_face_video' %}", {
@@ -1028,9 +1121,9 @@
 
   pickRandomActivity();
 
-  btnStart.addEventListener("click", startRecording);
-  btnStop.addEventListener("click", stopRecording);
-  btnSubmit.addEventListener("click", submitVideo);
+  if (btnStart) btnStart.addEventListener("click", startRecording);
+  if (btnStop) btnStop.addEventListener("click", stopRecording);
+  if (btnSubmit) btnSubmit.addEventListener("click", submitVideo);
 })();
 </script>
 {% endblock %}

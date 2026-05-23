@@ -12,7 +12,7 @@
       <div>
         <span class="activity-badge">Activity 2</span>
         <h1>Voice Phonation Activity</h1>
-        <p>Speak the shown Hindi sound clearly. Each sound is verified by voice strength, hold time, and backend transcript check.</p>
+        <p>Speak the shown Hindi vocal sound clearly. After a good hold, MindSpace will auto-submit it through Feature Extraction → PCA → Scoring.</p>
       </div>
 
       <div class="score-box">
@@ -26,7 +26,7 @@
       <div class="target-panel">
 
         <div class="mission-line">
-          <span id="missionText">Mission 1 of 28</span>
+          <span id="missionText">Mission 1 of 7</span>
           <strong id="streakText">Streak: 0</strong>
         </div>
 
@@ -50,9 +50,23 @@
           Press Start Activity to begin.
         </div>
 
-        <div class="recognized-box">
-          Heard locally:
-          <span id="recognizedText">—</span>
+        <div class="pipeline-box">
+          <div class="pipeline-step" id="stepRecord">
+            <span>1</span>
+            <strong>Record</strong>
+          </div>
+          <div class="pipeline-step" id="stepExtract">
+            <span>2</span>
+            <strong>6373 Features</strong>
+          </div>
+          <div class="pipeline-step" id="stepPca">
+            <span>3</span>
+            <strong>24 PCA</strong>
+          </div>
+          <div class="pipeline-step" id="stepScore">
+            <span>4</span>
+            <strong>Score</strong>
+          </div>
         </div>
 
       </div>
@@ -93,7 +107,7 @@
             <div class="hold-fill" id="holdFill"></div>
           </div>
 
-          <small>Hold for 1 second. Then submit the sound for backend verification.</small>
+          <small>Hold the sound steadily. After the circle completes, it auto-submits for 6373-feature extraction, PCA, and scoring.</small>
         </div>
 
         <div class="button-row">
@@ -110,6 +124,21 @@
           </button>
         </div>
 
+        <div class="backend-result-box" id="backendResultBox">
+          <div>
+            <span>Raw Features</span>
+            <strong id="rawFeatureCount">—</strong>
+          </div>
+          <div>
+            <span>PCA Features</span>
+            <strong id="pcaFeatureCount">—</strong>
+          </div>
+          <div>
+            <span>Pipeline</span>
+            <strong id="pipelineState">Waiting</strong>
+          </div>
+        </div>
+
       </div>
 
     </div>
@@ -117,7 +146,7 @@
     <div class="chips-panel">
       <div class="chips-header">
         <span>Sound Path</span>
-        <strong id="completedText">0 / 28 completed</strong>
+        <strong id="completedText">0 / 7 completed</strong>
       </div>
 
       <div class="sound-chips" id="soundChips"></div>
@@ -356,18 +385,96 @@
   font-weight: 900;
 }
 
-.recognized-box {
+.pipeline-box {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.pipeline-step {
+  min-height: 54px;
   border-radius: 14px;
   background: #ffffff;
   border: 1px solid var(--ms-border);
-  color: var(--ms-muted);
-  padding: 8px 10px;
-  font-size: 0.8rem;
-  font-weight: 800;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
 }
 
-.recognized-box span {
+.pipeline-step span {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: #e5e7eb;
+  color: #475569;
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.pipeline-step strong {
+  color: var(--ms-muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+  text-align: center;
+}
+
+.pipeline-step.active {
+  border-color: #fbbf24;
+  background: #fffbeb;
+}
+
+.pipeline-step.active span {
+  background: #fbbf24;
+  color: #78350f;
+}
+
+.pipeline-step.done {
+  border-color: var(--ms-green);
+  background: var(--ms-green-soft);
+}
+
+.pipeline-step.done span {
+  background: var(--ms-green);
+  color: #ffffff;
+}
+
+.pipeline-step.done strong {
   color: var(--ms-green-dark);
+}
+
+.backend-result-box {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 9px;
+  margin-top: 2px;
+}
+
+.backend-result-box div {
+  border-radius: 14px;
+  border: 1px solid var(--ms-border);
+  background: #f8fafc;
+  padding: 10px;
+  text-align: center;
+}
+
+.backend-result-box span {
+  display: block;
+  color: var(--ms-muted);
+  font-size: 0.7rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.backend-result-box strong {
+  display: block;
+  color: var(--ms-green-dark);
+  font-size: 0.92rem;
+  font-weight: 900;
 }
 
 .control-panel {
@@ -512,7 +619,7 @@
 
 .sound-chips {
   display: grid;
-  grid-template-columns: repeat(14, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 7px;
 }
 
@@ -557,7 +664,7 @@
   }
 
   .sound-chips {
-    grid-template-columns: repeat(10, minmax(0, 1fr));
+    grid-template-columns: repeat(7, minmax(0, 1fr));
   }
 }
 
@@ -574,8 +681,13 @@
     width: 100%;
   }
 
-  .button-row {
+  .button-row,
+  .backend-result-box {
     grid-template-columns: 1fr;
+  }
+
+  .pipeline-box {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .sound-chips {
@@ -591,38 +703,60 @@
   "use strict";
 
   const soundTasks = [
-    { label: "क", prompt: "का", say: "का का का", accepted: ["का", "क", "कह", "ka", "kaa"] },
-    { label: "ख", prompt: "खा", say: "खा खा खा", accepted: ["खा", "ख", "kha", "khaa"] },
-    { label: "ग", prompt: "गा", say: "गा गा गा", accepted: ["गा", "ग", "ga", "gaa"] },
-    { label: "घ", prompt: "घा", say: "घा घा घा", accepted: ["घा", "घ", "gha", "ghaa"] },
-    { label: "च", prompt: "चा", say: "चा चा चा", accepted: ["चा", "च", "cha", "chaa"] },
-    { label: "छ", prompt: "छा", say: "छा छा छा", accepted: ["छा", "छ", "chha", "chhaa"] },
-    { label: "ज", prompt: "जा", say: "जा जा जा", accepted: ["जा", "ज", "ja", "jaa"] },
-    { label: "झ", prompt: "झा", say: "झा झा झा", accepted: ["झा", "झ", "jha", "jhaa"] },
-    { label: "ट", prompt: "टा", say: "टा टा टा", accepted: ["टा", "ट", "ta", "taa"] },
-    { label: "ठ", prompt: "ठा", say: "ठा ठा ठा", accepted: ["ठा", "ठ", "tha", "thaa"] },
-    { label: "ड", prompt: "डा", say: "डा डा डा", accepted: ["डा", "ड", "da", "daa"] },
-    { label: "ढ", prompt: "ढा", say: "ढा ढा ढा", accepted: ["ढा", "ढ", "dha", "dhaa"] },
-    { label: "त", prompt: "ता", say: "ता ता ता", accepted: ["ता", "त", "ta", "taa"] },
-    { label: "थ", prompt: "था", say: "था था था", accepted: ["था", "थ", "tha", "thaa"] },
-    { label: "द", prompt: "दा", say: "दा दा दा", accepted: ["दा", "द", "da", "daa"] },
-    { label: "ध", prompt: "धा", say: "धा धा धा", accepted: ["धा", "ध", "dha", "dhaa"] },
-    { label: "प", prompt: "पा", say: "पा पा पा", accepted: ["पा", "प", "pa", "paa"] },
-    { label: "फ", prompt: "फा", say: "फा फा फा", accepted: ["फा", "फ", "fa", "faa", "pha", "phaa"] },
-    { label: "ब", prompt: "बा", say: "बा बा बा", accepted: ["बा", "ब", "ba", "baa"] },
-    { label: "भ", prompt: "भा", say: "भा भा भा", accepted: ["भा", "भ", "bha", "bhaa"] },
-    { label: "म", prompt: "मा", say: "मा मा मा", accepted: ["मा", "म", "ma", "maa"] },
-    { label: "य", prompt: "या", say: "या या या", accepted: ["या", "य", "ya", "yaa"] },
-    { label: "र", prompt: "रा", say: "रा रा रा", accepted: ["रा", "र", "ra", "raa"] },
-    { label: "ल", prompt: "ला", say: "ला ला ला", accepted: ["ला", "ल", "la", "laa"] },
-    { label: "व", prompt: "वा", say: "वा वा वा", accepted: ["वा", "व", "va", "vaa", "wa", "waa"] },
-    { label: "श", prompt: "शा", say: "शा शा शा", accepted: ["शा", "श", "sha", "shaa"] },
-    { label: "स", prompt: "सा", say: "सा सा सा", accepted: ["सा", "स", "sa", "saa"] },
-    { label: "ह", prompt: "हा", say: "हा हा हा", accepted: ["हा", "ह", "ha", "haa"] }
+    {
+      label: "आ",
+      prompt: "आ",
+      say: "आआआ",
+      accepted: [],
+      help: "Open vowel. Keep your jaw relaxed and hold one steady sound."
+    },
+    {
+      label: "ई",
+      prompt: "ई",
+      say: "ईईई",
+      accepted: [],
+      help: "High front vowel. Keep the sound stable, not broken."
+    },
+    {
+      label: "ऊ",
+      prompt: "ऊ",
+      say: "ऊऊऊ",
+      accepted: [],
+      help: "Rounded vowel. Keep lips rounded and voice steady."
+    },
+    {
+      label: "ए",
+      prompt: "ए",
+      say: "एएए",
+      accepted: [],
+      help: "Mid vowel. Hold the same pitch and volume."
+    },
+    {
+      label: "ओ",
+      prompt: "ओ",
+      say: "ओओओ",
+      accepted: [],
+      help: "Rounded mid vowel. Avoid shaking or cutting the sound."
+    },
+    {
+      label: "म",
+      prompt: "म्",
+      say: "म्म्म",
+      accepted: [],
+      help: "Humming sound. Close lips gently and make a steady nasal vibration."
+    },
+    {
+      label: "ह",
+      prompt: "हा",
+      say: "हा",
+      accepted: [],
+      help: "Breathy sound. Speak softly but clearly with controlled airflow."
+    }
   ];
 
-  const REQUIRED_HOLD_MS = 1000;
+  const REQUIRED_HOLD_MS = 1500;
   const VOICE_THRESHOLD = 32;
+  const AUTO_SUBMIT_AFTER_HOLD = true;
 
   const currentSound = document.getElementById("currentSound");
   const speakPrompt = document.getElementById("speakPrompt");
@@ -630,7 +764,6 @@
   const streakText = document.getElementById("streakText");
   const scoreText = document.getElementById("scoreText");
   const statusBox = document.getElementById("statusBox");
-  const recognizedText = document.getElementById("recognizedText");
 
   const ringProgress = document.getElementById("ringProgress");
   const voiceFill = document.getElementById("voiceFill");
@@ -646,6 +779,16 @@
   const startBtn = document.getElementById("startBtn");
   const stopBtn = document.getElementById("stopBtn");
   const submitBtn = document.getElementById("submitBtn");
+
+  const rawFeatureCount = document.getElementById("rawFeatureCount");
+  const pcaFeatureCount = document.getElementById("pcaFeatureCount");
+  const pipelineState = document.getElementById("pipelineState");
+  const pipelineSteps = {
+    record: document.getElementById("stepRecord"),
+    extract: document.getElementById("stepExtract"),
+    pca: document.getElementById("stepPca"),
+    score: document.getElementById("stepScore")
+  };
 
   let index = 0;
   let completed = 0;
@@ -666,9 +809,9 @@
   let maxVoice = 0;
   let baselineNoise = 0;
 
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  let recognition = null;
-  let lastTranscript = "";
+  let holdCompleted = false;
+  let autoSubmitPending = false;
+  let isSubmitting = false;
 
   function csrfToken() {
     const input = document.querySelector("[name=csrfmiddlewaretoken]");
@@ -683,21 +826,50 @@
     statusBox.textContent = text;
   }
 
+  function resetPipelineUi() {
+    rawFeatureCount.textContent = "—";
+    pcaFeatureCount.textContent = "—";
+    pipelineState.textContent = "Waiting";
+
+    Object.values(pipelineSteps).forEach(function (step) {
+      step.classList.remove("active", "done");
+    });
+  }
+
+  function setPipelineStep(name, state) {
+    const step = pipelineSteps[name];
+    if (!step) return;
+
+    step.classList.remove("active", "done");
+
+    if (state === "active") {
+      step.classList.add("active");
+    }
+
+    if (state === "done") {
+      step.classList.add("done");
+    }
+  }
+
   function resetMeters() {
     holdStart = null;
     holdMs = 0;
     maxVoice = 0;
     audioBlob = null;
     chunks = [];
-    lastTranscript = "";
+
+    holdCompleted = false;
+    autoSubmitPending = false;
+    isSubmitting = false;
 
     voiceFill.style.width = "0%";
     voicePercent.textContent = "0%";
     holdFill.style.width = "0%";
     holdPercent.textContent = "0%";
     ringProgress.style.strokeDashoffset = "440";
-    recognizedText.textContent = "—";
+
     currentSound.classList.remove("listening", "success");
+    resetPipelineUi();
   }
 
   function renderChips() {
@@ -721,6 +893,7 @@
     missionText.textContent = `Mission ${index + 1} of ${soundTasks.length}`;
     currentSound.textContent = t.label;
     speakPrompt.textContent = t.say;
+    setStatus(t.help || "Press Start Sound to begin.");
     streakText.textContent = `Streak: ${streak}`;
     scoreText.textContent = completed;
 
@@ -733,37 +906,19 @@
     resetMeters();
   }
 
-  function setupSpeechRecognition() {
-    if (!SpeechRecognition) return;
-
-    recognition = new SpeechRecognition();
-    recognition.lang = "hi-IN";
-    recognition.continuous = true;
-    recognition.interimResults = true;
-
-    recognition.onresult = function (event) {
-      let text = "";
-
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        text += event.results[i][0].transcript;
-      }
-
-      lastTranscript = text.trim();
-      recognizedText.textContent = lastTranscript || "—";
-    };
-
-    recognition.onerror = function () {};
-  }
-
   async function startSound() {
     resetMeters();
-    setStatus("Listening... speak the shown sound clearly.");
+    setStatus("Listening... hold the shown vocal sound until the circle completes.");
 
     startBtn.disabled = true;
     stopBtn.disabled = false;
     submitBtn.disabled = true;
 
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Microphone API is not available. Use http://127.0.0.1:8000 or HTTPS.");
+      }
+
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -793,18 +948,23 @@
         if (holdMs >= REQUIRED_HOLD_MS) {
           submitBtn.disabled = false;
           currentSound.classList.add("success");
-          setStatus("Sound recorded. Submit for backend verification.");
+
+          if (autoSubmitPending && AUTO_SUBMIT_AFTER_HOLD) {
+            setStatus("Uploading to backend pipeline...");
+            setTimeout(function () {
+              submitSound();
+            }, 300);
+          } else {
+            setStatus("Sound recorded. Submit for backend pipeline.");
+          }
         } else {
           submitBtn.disabled = true;
+          startBtn.disabled = false;
           setStatus("Hold time too short. Try again.");
         }
       };
 
       mediaRecorder.start();
-
-      if (recognition) {
-        try { recognition.start(); } catch (e) {}
-      }
 
       monitorVoice();
 
@@ -816,6 +976,10 @@
   }
 
   function monitorVoice() {
+    if (!analyser || !dataArray || holdCompleted) {
+      return;
+    }
+
     analyser.getByteTimeDomainData(dataArray);
 
     let sum = 0;
@@ -834,7 +998,10 @@
     voicePercent.textContent = `${percent}%`;
 
     if (percent > VOICE_THRESHOLD) {
-      if (!holdStart) holdStart = Date.now();
+      if (!holdStart) {
+        holdStart = Date.now();
+      }
+
       holdMs = Date.now() - holdStart;
       currentSound.classList.add("listening");
     } else {
@@ -843,6 +1010,7 @@
     }
 
     const holdProgress = Math.min(100, Math.round((holdMs / REQUIRED_HOLD_MS) * 100));
+
     holdFill.style.width = `${holdProgress}%`;
     holdPercent.textContent = `${holdProgress}%`;
 
@@ -850,54 +1018,81 @@
     ringProgress.style.strokeDashoffset = dashOffset;
 
     if (holdProgress >= 100) {
-      setStatus("Good hold. Stop and submit this sound.");
+      holdCompleted = true;
+      autoSubmitPending = true;
+
+      holdFill.style.width = "100%";
+      holdPercent.textContent = "100%";
+      ringProgress.style.strokeDashoffset = "0";
+      currentSound.classList.add("success");
+
+      setStatus("Good hold completed. Auto-submitting...");
+
+      stopSound(true);
+      return;
     }
 
     animationId = requestAnimationFrame(monitorVoice);
   }
 
-  function stopSound() {
-    if (mediaRecorder && mediaRecorder.state !== "inactive") {
-      mediaRecorder.stop();
-    }
+  function stopSound(autoSubmit = false) {
+    try {
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
 
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-    }
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        autoSubmitPending = autoSubmit;
+        mediaRecorder.stop();
+      }
 
-    if (audioContext) {
-      audioContext.close();
-    }
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+      }
 
-    if (recognition) {
-      try { recognition.stop(); } catch (e) {}
+      if (audioContext && audioContext.state !== "closed") {
+        audioContext.close();
+        audioContext = null;
+      }
+    } catch (error) {
+      setStatus("Stop failed: " + error.message);
     }
-
-    cancelAnimationFrame(animationId);
 
     stopBtn.disabled = true;
-    startBtn.disabled = false;
+
+    if (!autoSubmit) {
+      startBtn.disabled = false;
+    }
   }
 
   async function submitSound() {
+    if (isSubmitting) return;
+
     if (!audioBlob) {
       setStatus("No audio found. Record again.");
+      startBtn.disabled = false;
       return;
     }
 
+    isSubmitting = true;
     submitBtn.disabled = true;
     startBtn.disabled = true;
     stopBtn.disabled = true;
 
-    setStatus("Uploading sound for backend verification...");
+    setStatus("Uploading audio to backend pipeline...");
+    pipelineState.textContent = "Uploading";
+    setPipelineStep("record", "done");
+    setPipelineStep("extract", "active");
 
     const t = task();
 
     const formData = new FormData();
-    formData.append("audio", audioBlob, `phonation-${t.label}.webm`);
+    formData.append("audio", audioBlob, `phonation-${index + 1}-${t.prompt}.webm`);
     formData.append("expected_label", t.label);
     formData.append("expected_prompt", t.prompt);
-    formData.append("accepted_values", JSON.stringify(t.accepted));
+    formData.append("accepted_values", JSON.stringify(t.accepted || []));
     formData.append("volume_score", String(maxVoice));
     formData.append("hold_ms", String(holdMs));
     formData.append("baseline_noise_level", String(baselineNoise));
@@ -917,6 +1112,17 @@
         throw new Error(data.reason || data.error || "Sound verification failed.");
       }
 
+      const rawCount = data.raw_feature_count || data.rawFeatureCount || "6373";
+      const pcaCount = data.pca_feature_count || data.pcaFeatureCount || "24";
+
+      rawFeatureCount.textContent = rawCount;
+      pcaFeatureCount.textContent = pcaCount;
+      pipelineState.textContent = "Saved";
+
+      setPipelineStep("extract", "done");
+      setPipelineStep("pca", "done");
+      setPipelineStep("score", "done");
+
       completed += 1;
       streak += 1;
       index += 1;
@@ -929,25 +1135,32 @@
         return;
       }
 
-      setStatus("Sound passed. Next mission ready.");
+      setStatus("Pipeline completed: 6373 features extracted, PCA reduced to 24, score saved. Next sound ready.");
       renderTask();
 
       startBtn.disabled = false;
 
     } catch (error) {
       streak = 0;
-      setStatus(error.message + " Try again.");
+      isSubmitting = false;
+      autoSubmitPending = false;
+      holdCompleted = false;
+
+      pipelineState.textContent = "Failed";
+      setPipelineStep("extract", "active");
+
+      setStatus("Backend/API failed: " + error.message);
+
       startBtn.disabled = false;
+      stopBtn.disabled = true;
       submitBtn.disabled = true;
-      renderTask();
     }
   }
 
-  startBtn.addEventListener("click", startSound);
-  stopBtn.addEventListener("click", stopSound);
-  submitBtn.addEventListener("click", submitSound);
+  if (startBtn) startBtn.addEventListener("click", startSound);
+  if (stopBtn) stopBtn.addEventListener("click", stopSound);
+  if (submitBtn) submitBtn.addEventListener("click", submitSound);
 
-  setupSpeechRecognition();
   renderTask();
 })();
 </script>

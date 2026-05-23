@@ -8,17 +8,21 @@ Compatible with the new PostgreSQL models.py where:
 - PendingSignup and Consent models are not present
 """
 
+from datetime import timedelta
+
 from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import PasswordResetForm
+from django.contrib.auth.hashers import make_password
+from django.core.mail import send_mail
 from django.db import IntegrityError, transaction
 from django.shortcuts import redirect, render
 from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
 
-from mindspace.models import AuditLog, UserProfile
+from mindspace.models import AuditLog, PendingSignup, UserProfile
 
 User = get_user_model()
 
@@ -113,19 +117,55 @@ def get_client_ip(request):
 
 
 # ======================================================
+# EMAIL VERIFICATION HELPERS
+# ======================================================
+
+def cleanup_expired_pending_signups():
+    PendingSignup.objects.filter(expires_at__lt=timezone.now()).delete()
+
+
+def send_signup_verification_email(request, pending_signup):
+    verify_url = request.build_absolute_uri(
+        reverse("verify_email", kwargs={"token": str(pending_signup.token)})
+    )
+
+    subject = "Verify your MindSpace account"
+
+    message = f"""
+Hi {pending_signup.name},
+
+Please verify your MindSpace account by clicking this link:
+
+{verify_url}
+
+This link will expire in 1 hour.
+
+If you did not create this account, you can ignore this email.
+"""
+
+    send_mail(
+        subject=subject,
+        message=message,
+        from_email=settings.DEFAULT_FROM_EMAIL,
+        recipient_list=[pending_signup.email],
+        fail_silently=False,
+    )
+
+# ======================================================
 # SIGNUP
 # ======================================================
 
 def signup_view(request):
     """
-    New models.py does not include PendingSignup.
-    So this version creates the user directly.
-
-    Development behavior:
-    - user signup: active immediately
-    - counselor signup: pending until admin changes account_status to active
-    - admin creation from public signup is blocked
+    Signup flow:
+    - Store signup data temporarily in PendingSignup
+    - Send verification email
+    - Create real User only after email verification
+    - Pending signup expires after 1 hour
     """
+
+    cleanup_expired_pending_signups()
+
     if request.method == "POST":
         name = request.POST.get("name", "").strip()
         email = request.POST.get("email", "").strip().lower()
@@ -139,77 +179,140 @@ def signup_view(request):
 
         if not name or not email or not password or not confirm_password:
             messages.error(request, "All fields are required.")
-            return safe_redirect("accounts:signup", "signup", fallback="/accounts/signup/")
+            return safe_redirect("signup", fallback="/accounts/signup/")
 
         if password != confirm_password:
             messages.error(request, "Passwords do not match.")
-            return safe_redirect("accounts:signup", "signup", fallback="/accounts/signup/")
+            return safe_redirect("signup", fallback="/accounts/signup/")
 
         if len(password) < 8:
             messages.error(request, "Password must be at least 8 characters.")
-            return safe_redirect("accounts:signup", "signup", fallback="/accounts/signup/")
+            return safe_redirect("signup", fallback="/accounts/signup/")
 
         if not terms:
             messages.error(request, "Please accept terms and policy.")
-            return safe_redirect("accounts:signup", "signup", fallback="/accounts/signup/")
+            return safe_redirect("signup", fallback="/accounts/signup/")
 
         if User.objects.filter(email=email).exists() or User.objects.filter(username=email).exists():
-            messages.error(request, "This email is already registered.")
-            return safe_redirect("accounts:signup", "signup", fallback="/accounts/signup/")
+            messages.error(request, "This email is already registered. Please login.")
+            return safe_redirect("login", fallback="/accounts/login/")
 
-        first_name = name.split(" ", 1)[0]
-        last_name = name.split(" ", 1)[1] if " " in name else ""
+        # Remove old pending request for same email.
+        PendingSignup.objects.filter(email=email).delete()
 
         try:
-            with transaction.atomic():
-                user = User.objects.create_user(
-                    username=email,
-                    email=email,
-                    password=password,
-                    first_name=first_name,
-                    last_name=last_name,
-                    is_active=True,
-                )
-
-                UserProfile.objects.update_or_create(
-                    user=user,
-                    defaults={
-                        "role": role,
-                        "account_status": "pending" if role == "counselor" else "active",
-                        "is_email_verified": True,
-                        "first_name": first_name,
-                        "last_name": last_name,
-                        "profile_completed": False,
-                        "consented": False,
-                    },
-                )
-
-                AuditLog.objects.create(
-                    user=user,
-                    action_name="account_signup",
-                    entity_name="UserProfile",
-                    metadata_json={
-                        "role": role,
-                        "email": email,
-                        "ip_address": get_client_ip(request),
-                    },
-                )
-
-        except IntegrityError:
-            messages.error(request, "Could not create account. Please try again.")
-            return safe_redirect("accounts:signup", "signup", fallback="/accounts/signup/")
-
-        if role == "counselor":
-            messages.success(
-                request,
-                "Counselor account created. Please wait for admin approval before login.",
+            pending_signup = PendingSignup.objects.create(
+                name=name,
+                email=email,
+                role=role,
+                password_hash=make_password(password),
+                terms_accepted=True,
+                expires_at=timezone.now() + timedelta(hours=1),
             )
-        else:
-            messages.success(request, "Account created successfully. Please login.")
 
-        return safe_redirect("accounts:login", "login", fallback="/accounts/login/")
+            send_signup_verification_email(request, pending_signup)
+
+        except Exception as exc:
+            messages.error(request, f"Could not send verification email: {exc}")
+            return safe_redirect("signup", fallback="/accounts/signup/")
+
+        messages.success(
+            request,
+            "Verification email sent. Please verify your email within 1 hour."
+        )
+        return safe_redirect("verify_success", fallback="/accounts/verify-success/")
 
     return render(request, "accounts/signup.html")
+
+
+def verify_email_view(request, token):
+    """
+    Verify email token:
+    - If valid and not expired, create User and UserProfile
+    - Delete pending signup
+    - Login user
+    - Redirect to consent
+    """
+
+    cleanup_expired_pending_signups()
+
+    pending_signup = PendingSignup.objects.filter(token=token).first()
+
+    if not pending_signup:
+        messages.error(request, "Invalid or expired verification link. Please sign up again.")
+        return safe_redirect("signup", fallback="/accounts/signup/")
+
+    if pending_signup.is_expired:
+        email = pending_signup.email
+        pending_signup.delete()
+        messages.error(
+            request,
+            f"Verification link expired for {email}. Please sign up again."
+        )
+        return safe_redirect("signup", fallback="/accounts/signup/")
+
+    if User.objects.filter(email=pending_signup.email).exists() or User.objects.filter(username=pending_signup.email).exists():
+        pending_signup.delete()
+        messages.info(request, "Account already exists. Please login.")
+        return safe_redirect("login", fallback="/accounts/login/")
+
+    first_name = pending_signup.name.split(" ", 1)[0]
+    last_name = pending_signup.name.split(" ", 1)[1] if " " in pending_signup.name else ""
+
+    try:
+        with transaction.atomic():
+            user = User(
+                username=pending_signup.email,
+                email=pending_signup.email,
+                password=pending_signup.password_hash,
+                first_name=first_name,
+                last_name=last_name,
+                is_active=True,
+            )
+            user.save()
+
+            UserProfile.objects.update_or_create(
+                user=user,
+                defaults={
+                    "role": pending_signup.role,
+                    "account_status": "pending" if pending_signup.role == "counselor" else "active",
+                    "is_email_verified": True,
+                    "first_name": first_name,
+                    "last_name": last_name,
+                    "avatar": "avatar_1.png",
+                    "profile_completed": False,
+                    "consented": False,
+                },
+            )
+
+            AuditLog.objects.create(
+                user=user,
+                action_name="email_verified_account_created",
+                entity_name="UserProfile",
+                metadata_json={
+                    "role": pending_signup.role,
+                    "email": pending_signup.email,
+                    "ip_address": get_client_ip(request),
+                },
+            )
+
+            pending_signup.delete()
+
+    except IntegrityError:
+        messages.error(request, "Could not create account. Please try again.")
+        return safe_redirect("signup", fallback="/accounts/signup/")
+
+    if user.profile.account_status == "pending":
+        messages.success(
+            request,
+            "Email verified. Counselor account is pending admin approval."
+        )
+        return safe_redirect("login", fallback="/accounts/login/")
+
+    login(request, user)
+
+    messages.success(request, "Email verified successfully. Please review the consent page.")
+    return safe_redirect("consent", fallback="/accounts/consent/")
 
 
 # ======================================================
@@ -217,15 +320,11 @@ def signup_view(request):
 # ======================================================
 
 def verify_signup_view(request, token=None):
-    """
-    Kept only so old urls.py does not break.
-    Your new models.py has no PendingSignup/token table.
-    """
-    messages.info(
-        request,
-        "Email verification is not enabled in the current database model. Please login directly.",
-    )
-    return safe_redirect("accounts:login", "login", fallback="/accounts/login/")
+    if not token:
+        messages.error(request, "Invalid verification link.")
+        return safe_redirect("signup", fallback="/accounts/signup/")
+
+    return verify_email_view(request, token)
 
 
 def verify_success_view(request):
@@ -252,6 +351,10 @@ def login_view(request):
             return safe_redirect("accounts:login", "login", fallback="/accounts/login/")
 
         profile = get_or_create_profile(user)
+
+        if not profile.is_email_verified:
+            messages.error(request, "Please verify your email before logging in.")
+            return safe_redirect("login", fallback="/accounts/login/")
 
         if profile.account_status == "pending":
             messages.error(request, "Your account is pending admin approval.")

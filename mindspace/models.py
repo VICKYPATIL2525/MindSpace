@@ -23,6 +23,8 @@ from django.conf import settings
 from django.db import models
 from django.db.models import Q
 from pgvector.django import VectorField
+from datetime import timedelta
+from django.utils import timezone
 
 
 # Set this to False if tables already exist from raw SQL/imported schema.
@@ -93,6 +95,44 @@ class TimeStampedModel(models.Model):
 
     class Meta:
         abstract = True
+
+
+class PendingSignup(models.Model):
+    ROLE_CHOICES = [
+        ("user", "User"),
+        ("counselor", "Counselor"),
+    ]
+
+    pending_signup_id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
+    )
+
+    name = models.CharField(max_length=150)
+    email = models.EmailField(unique=True)
+    role = models.CharField(max_length=30, choices=ROLE_CHOICES, default="user")
+
+    password_hash = models.CharField(max_length=255)
+
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False)
+
+    terms_accepted = models.BooleanField(default=False)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+
+    def save(self, *args, **kwargs):
+        if not self.expires_at:
+            self.expires_at = timezone.now() + timedelta(hours=1)
+        super().save(*args, **kwargs)
+
+    @property
+    def is_expired(self):
+        return timezone.now() > self.expires_at
+
+    def __str__(self):
+        return f"{self.email} pending verification"
 
 
 class UserProfile(TimeStampedModel):
@@ -612,59 +652,87 @@ class TextAnalysisResult(models.Model):
 
 class PcaPipelineResult(models.Model):
     pca_result_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    screening_session = models.OneToOneField(
+
+    screening_session = models.ForeignKey(
         PlatformScreeningSession,
         on_delete=models.CASCADE,
-        related_name="pca_pipeline_result",
-        db_column="screening_session_id",
+        related_name="pca_pipeline_results"
     )
-    reduced_feature_vector = VectorField(dimensions=128, blank=True, null=True)
-    dimensionality_reduction_metadata = models.JSONField(blank=True, null=True)
-    api_version = models.CharField(max_length=100, blank=True, null=True)
-    processed_at = models.DateTimeField(blank=True, null=True)
+
+    phonation_feature = models.ForeignKey(
+        PhonationFeature,
+        on_delete=models.CASCADE,
+        related_name="pca_pipeline_results",
+        null=True,
+        blank=True
+    )
+
+    input_feature_count = models.IntegerField(default=0)
+    output_feature_count = models.IntegerField(default=0)
+
+    raw_features_json = models.JSONField(default=dict, blank=True)
+    pca_response_json = models.JSONField(default=dict, blank=True)
+    pca_components = models.JSONField(default=dict, blank=True)
+    pca_features = models.JSONField(default=list, blank=True)
+
+    latency_seconds = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)
+
+    status = models.CharField(max_length=50, default="completed")
+    processed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         managed = MANAGED_BY_DJANGO
         db_table = "pca_pipeline_results"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["screening_session", "phonation_feature"],
+                name="unique_pca_per_session_phonation_feature"
+            )
+        ]
 
-
+    def __str__(self):
+        return f"PCA Result - {self.screening_session_id}"
+    
 class FusionPrediction(models.Model):
     prediction_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
     screening_session = models.OneToOneField(
         PlatformScreeningSession,
         on_delete=models.CASCADE,
         related_name="fusion_prediction",
         db_column="screening_session_id",
     )
-    pca_result = models.OneToOneField(
-        PcaPipelineResult,
-        on_delete=models.PROTECT,
-        related_name="fusion_prediction",
-        db_column="pca_result_id",
-        blank=True,
-        null=True,
-    )
+
     anxiety_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     depression_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     stress_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     bipolar_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     suicidal_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
-    overall_risk = models.CharField(max_length=20, choices=RiskLevel.choices, blank=True, null=True)
+
+    overall_risk = models.CharField(
+        max_length=20,
+        choices=RiskLevel.choices,
+        blank=True,
+        null=True,
+    )
+
     confidence_score = models.DecimalField(max_digits=5, decimal_places=4, blank=True, null=True)
     final_prediction_json = models.JSONField(blank=True, null=True)
-    predicted_at = models.DateTimeField(auto_now_add=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         managed = MANAGED_BY_DJANGO
         db_table = "fusion_predictions"
         constraints = [
-            models.CheckConstraint(condition=Q(anxiety_score__gte=0, anxiety_score__lte=100) | Q(anxiety_score__isnull=True), name="fusion_anxiety_score_0_100"),
-            models.CheckConstraint(condition=Q(depression_score__gte=0, depression_score__lte=100) | Q(depression_score__isnull=True), name="fusion_depression_score_0_100"),
-            models.CheckConstraint(condition=Q(stress_score__gte=0, stress_score__lte=100) | Q(stress_score__isnull=True), name="fusion_stress_score_0_100"),
-            models.CheckConstraint(condition=Q(bipolar_score__gte=0, bipolar_score__lte=100) | Q(bipolar_score__isnull=True), name="fusion_bipolar_score_0_100"),
-            models.CheckConstraint(condition=Q(suicidal_score__gte=0, suicidal_score__lte=100) | Q(suicidal_score__isnull=True), name="fusion_suicidal_score_0_100"),
-            models.CheckConstraint(condition=Q(confidence_score__gte=0, confidence_score__lte=1) | Q(confidence_score__isnull=True), name="fusion_confidence_score_0_1"),
+            models.CheckConstraint(
+                condition=Q(confidence_score__gte=0, confidence_score__lte=1) | Q(confidence_score__isnull=True),
+                name="fusion_confidence_score_0_1",
+            ),
         ]
+
+    def __str__(self):
+        return f"Fusion Prediction - {self.screening_session_id}"
 
 
 class AiApiRegistry(models.Model):
