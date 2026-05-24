@@ -28,7 +28,7 @@
           <h3>Tips</h3>
           <ul>
             <li>Speak clearly and naturally.</li>
-            <li>Try to speak for at least 15 seconds.</li>
+            <li>Speak for 15 to 30 seconds. The recorder will stop automatically at 30 seconds.</li>
             <li>There is no right or wrong answer.</li>
             <li>Use your real expression.</li>
           </ul>
@@ -82,7 +82,7 @@
         </div>
 
         <p class="warning hidden" id="durationWarning">
-          Speak for at least 15 seconds before submitting.
+          Speak for 15 to 30 seconds before submitting.
         </p>
 
         <p class="server-message" id="serverMessage"></p>
@@ -433,9 +433,13 @@
   let dataArray = null;
   let animationId = null;
 
+  const MIN_DURATION_SECONDS = 15;
+  const MAX_DURATION_SECONDS = 30;
+
   let startedAt = null;
   let timerInterval = null;
   let durationSeconds = 0;
+  let autoStoppedAtMax = false;
 
   function csrfToken() {
     const input = document.querySelector("[name=csrfmiddlewaretoken]");
@@ -456,15 +460,25 @@
 
   function startTimer() {
     startedAt = Date.now();
+    autoStoppedAtMax = false;
 
     timerInterval = setInterval(function () {
       durationSeconds = Math.floor((Date.now() - startedAt) / 1000);
       timerText.textContent = formatTime(durationSeconds);
+
+      if (durationSeconds >= MAX_DURATION_SECONDS && !autoStoppedAtMax) {
+        autoStoppedAtMax = true;
+        stopRecording(true);
+        setMessage("Maximum 30 seconds reached. Review and submit your response.", "success");
+      }
     }, 300);
   }
 
   function stopTimer() {
-    clearInterval(timerInterval);
+    if (timerInterval) {
+      clearInterval(timerInterval);
+      timerInterval = null;
+    }
   }
 
   function monitorVoice() {
@@ -493,9 +507,14 @@
     audioBlob = null;
     chunks = [];
     durationSeconds = 0;
+    autoStoppedAtMax = false;
     timerText.textContent = "00:00";
 
     try {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Microphone API is not available. Use http://127.0.0.1:8000 or HTTPS.");
+      }
+
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
       audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -524,8 +543,19 @@
         audioPlayer.src = URL.createObjectURL(audioBlob);
         audioPlayer.classList.remove("hidden");
 
-        btnSubmit.disabled = durationSeconds < 15;
-        durationWarning.classList.toggle("hidden", durationSeconds >= 15);
+        const validDuration = durationSeconds >= MIN_DURATION_SECONDS && durationSeconds <= MAX_DURATION_SECONDS;
+
+        btnSubmit.disabled = !validDuration;
+
+        if (durationSeconds < MIN_DURATION_SECONDS) {
+          durationWarning.textContent = "Speak for at least 15 seconds before submitting.";
+          durationWarning.classList.remove("hidden");
+        } else if (durationSeconds > MAX_DURATION_SECONDS) {
+          durationWarning.textContent = "Audio must be 30 seconds or less for transcription.";
+          durationWarning.classList.remove("hidden");
+        } else {
+          durationWarning.classList.add("hidden");
+        }
 
         statusText.textContent = "Recording ready";
         instructionText.textContent = "Review your response, then submit.";
@@ -550,36 +580,54 @@
     }
   }
 
-  function stopRecording() {
-    if (mediaRecorder && mediaRecorder.state !== "inactive") {
-      mediaRecorder.stop();
+  function stopRecording(autoStop = false) {
+    try {
+      if (mediaRecorder && mediaRecorder.state !== "inactive") {
+        mediaRecorder.stop();
+      }
+
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+      }
+
+      if (audioContext && audioContext.state !== "closed") {
+        audioContext.close();
+        audioContext = null;
+      }
+
+      if (animationId) {
+        cancelAnimationFrame(animationId);
+        animationId = null;
+      }
+
+      stopTimer();
+
+      btnStop.classList.add("hidden");
+      btnRetry.classList.remove("hidden");
+      btnStart.classList.remove("hidden");
+
+      statusDot.classList.remove("recording");
+      micDisplay.classList.remove("recording");
+
+      if (autoStop) {
+        statusText.textContent = "30 second limit reached";
+        instructionText.textContent = "Review your response, then submit.";
+      }
+    } catch (error) {
+      setMessage("Stop recording failed: " + error.message, "error");
     }
-
-    if (stream) {
-      stream.getTracks().forEach(track => track.stop());
-    }
-
-    if (audioContext) {
-      audioContext.close();
-    }
-
-    cancelAnimationFrame(animationId);
-    stopTimer();
-
-    btnStop.classList.add("hidden");
-    btnRetry.classList.remove("hidden");
-    btnStart.classList.remove("hidden");
-
-    statusDot.classList.remove("recording");
-    micDisplay.classList.remove("recording");
   }
 
   function retryRecording() {
     audioBlob = null;
     audioPlayer.classList.add("hidden");
     btnSubmit.disabled = true;
+    durationWarning.textContent = "Speak for 15 to 30 seconds before submitting.";
     durationWarning.classList.add("hidden");
     setMessage("", "");
+    durationSeconds = 0;
+    autoStoppedAtMax = false;
     timerText.textContent = "00:00";
     statusText.textContent = "Ready to start";
     instructionText.textContent = "Press Start Recording to begin your response.";
@@ -591,7 +639,14 @@
       return;
     }
 
-    if (durationSeconds < 15) {
+    if (durationSeconds < MIN_DURATION_SECONDS) {
+      durationWarning.textContent = "Speak for at least 15 seconds before submitting.";
+      durationWarning.classList.remove("hidden");
+      return;
+    }
+
+    if (durationSeconds > MAX_DURATION_SECONDS) {
+      durationWarning.textContent = "Audio must be 30 seconds or less for Sarvam transcription.";
       durationWarning.classList.remove("hidden");
       return;
     }
@@ -600,13 +655,20 @@
     btnStart.disabled = true;
     btnRetry.disabled = true;
 
-    setMessage("Uploading scenario response and running text analysis...", "");
+    setMessage("Uploading scenario response, transcribing audio, and running text analysis...", "");
 
     const formData = new FormData();
     formData.append("audio", audioBlob, "scenario-response.webm");
-    formData.append("scenario_id", scenarioText.textContent.trim());
-    formData.append("scenario_text", scenarioText.textContent.trim());
+    const scenarioPrompt = scenarioText.textContent.trim();
+
+    // IMPORTANT:
+    // scenario_id must be short because backend AudioScenario.scenario_code is max_length=50.
+    // Do not send the full scenario sentence as scenario_id.
+    formData.append("scenario_id", "friend_stress_support");
+    formData.append("scenario_prompt", scenarioPrompt);
+    formData.append("scenario_text", scenarioPrompt);
     formData.append("duration", String(durationSeconds));
+    formData.append("max_duration_seconds", String(MAX_DURATION_SECONDS));
 
     try {
       const response = await fetch("{% url 'upload_scenario_voice_response' %}", {

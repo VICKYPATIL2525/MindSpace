@@ -179,7 +179,7 @@ def _fusion_result_payload(result):
         "risk_probability": probability,
         "scores": scores,
         "final_prediction_json": result.final_prediction_json,
-        "created_at": _json_value(result.predicted_at),
+        "created_at": _json_value(result.created_at),
     }
 
 
@@ -228,7 +228,7 @@ def analysis_results_view(request):
     if analysis_type in ["", "fusion", "final"]:
         fusion_results = FusionPrediction.objects.filter(
             screening_session__in=sessions
-        ).select_related("screening_session").order_by("-predicted_at")
+        ).select_related("screening_session").order_by("-created_at")
         results.extend(_fusion_result_payload(item) for item in fusion_results)
 
     # Sort safely by created_at/processed_at. Null dates go last.
@@ -354,7 +354,7 @@ def analysis_summary_api(request):
 
     latest_fusion = FusionPrediction.objects.filter(
         screening_session__in=sessions
-    ).order_by("-predicted_at").first()
+    ).order_by("-created_at").first()
 
     summary = {}
 

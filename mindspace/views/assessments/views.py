@@ -414,6 +414,225 @@ def pick_final_risk(payload):
     return normalize_risk_label(raw)
 
 
+# ============================================================
+# FUSION FEATURE SCHEMA HELPERS
+# ============================================================
+
+FUSION_PC_KEYS = [f"PC{i}" for i in range(1, 25)]
+
+FUSION_FACE_KEYS = [
+    "au12_activation_frequency",
+    "au12_mean_amplitude",
+    "au12_variance",
+    "au15_mean_amplitude",
+    "au1_au2_peak_intensity",
+    "au20_activation_rate",
+    "au4_duration_ratio",
+    "au4_mean_activation",
+    "baseline_eye_openness",
+    "blink_cluster_density",
+    "blink_duration",
+    "blink_rate",
+    "downward_gaze_frequency",
+    "extended_silence_ratio",
+    "eye_contact_ratio",
+    "facial_emotional_range",
+    "facial_transition_frequency",
+    "gaze_shift_frequency",
+    "gesture_frequency",
+    "head_motion_energy",
+    "head_velocity_peak",
+    "landmark_displacement_mean",
+    "lip_compression_frequency",
+    "mean_head_velocity",
+    "micro_motion_energy",
+    "motion_energy_floor_score",
+    "near_zero_au_activation_ratio",
+    "nod_onset_latency",
+    "overall_au_variance",
+    "pause_duration_mean",
+    "posture_rigidity_index",
+    "reaction_time_instability_index",
+    "response_latency_mean",
+    "speech_onset_delay",
+    "topic_shift_frequency",
+]
+
+FUSION_TEXT_KEYS = [
+    "absolutist_word_frequency",
+    "adjective_ratio",
+    "adverb_ratio",
+    "anger_word_frequency",
+    "average_sentence_length",
+    "avg_dependency_length",
+    "avoidance_language_frequency",
+    "catastrophizing_indicators",
+    "clause_count",
+    "cognitive_load_score",
+    "disgust_frequency",
+    "emotional_intensity_ratio",
+    "emotional_volatility_score",
+    "external_locus_of_control_score",
+    "fear_word_frequency",
+    "filler_word_frequency",
+    "first_last_sentence_similarity",
+    "first_person_singular_pronoun_frequency",
+    "future_focused_word_ratio",
+    "hapax_legoman_ratio",
+    "helplessness_phrase_frequency",
+    "joy_frequency",
+    "max_negative_emotion",
+    "max_sentence_similarity",
+    "modal_verb_frequency",
+    "moving_average_ttr",
+    "negative_emotion_spike_count",
+    "negative_emotion_word_ratio",
+    "negative_frequency",
+    "noun_ratio",
+    "overall_sentiment_score",
+    "parse_tree_depth",
+    "past_focused_word_ratio",
+    "positive_emotion_word_ratio",
+    "present_focused_word_ratio",
+    "repetition_rate",
+    "rumination_phrase_frequency",
+    "sadness_word_frequency",
+    "self_reference_density",
+    "semantic_coherence_score",
+    "sentence_count",
+    "sentiment_trajectory_slope",
+    "sentiment_variance",
+    "subordinate_clause_ratio",
+    "surprise_frequency",
+    "threat_anticipation_language",
+    "total_word_count",
+    "type_token_ratio_ttr",
+    "uncertainty_word_frequency",
+    "unique_word_count",
+    "verb_ratio",
+]
+
+FUSION_EXPECTED_FEATURES = FUSION_PC_KEYS + FUSION_FACE_KEYS + FUSION_TEXT_KEYS
+
+
+def safe_float_or_zero(value):
+    try:
+        if value is None or value == "":
+            return 0.0
+        return float(value)
+    except Exception:
+        return 0.0
+
+
+def first_numeric_from_prefixed_features(features, base_key):
+    """
+    Face API often returns statistical feature names such as:
+      blink_rate__mean, blink_rate__std, blink_rate__slope
+
+    Fusion API expects:
+      blink_rate
+
+    Priority:
+      exact key -> __mean -> __max -> __min -> __std -> __range -> __slope -> first prefix match
+    """
+    if not isinstance(features, dict):
+        return 0.0
+
+    if base_key in features:
+        return safe_float_or_zero(features.get(base_key))
+
+    suffix_priority = ["__mean", "__max", "__min", "__std", "__range", "__slope"]
+
+    for suffix in suffix_priority:
+        key = f"{base_key}{suffix}"
+        if key in features:
+            return safe_float_or_zero(features.get(key))
+
+    prefix = f"{base_key}__"
+    for key, value in features.items():
+        if str(key).startswith(prefix):
+            return safe_float_or_zero(value)
+
+    return 0.0
+
+
+def get_text_feature_value(text_features, feature_name):
+    """
+    Normalize small name differences between Text API and Fusion API.
+    """
+    if not isinstance(text_features, dict):
+        return 0.0
+
+    aliases = {
+        "hapax_legoman_ratio": ["hapax_legoman_ratio", "hapax_legomena_ratio"],
+        "type_token_ratio_ttr": ["type_token_ratio_ttr", "type_token_ratio"],
+        "repetition_rate": ["repetition_rate", "repetition_ratio"],
+    }
+
+    for key in aliases.get(feature_name, [feature_name]):
+        if key in text_features:
+            return safe_float_or_zero(text_features.get(key))
+
+    return 0.0
+
+
+def build_fusion_feature_payload(face_payload, voice_payload, text_payload):
+    """
+    Build the exact flat feature schema expected by Fusion API.
+
+    Fusion API error showed it expects top-level keys:
+      PC1..PC24 + face feature names + text feature names
+
+    It does NOT accept:
+      face_features, voice_features, text_features
+    """
+    face_features = {}
+    voice_components = {}
+    text_features = {}
+
+    if isinstance(face_payload, dict):
+        face_features = face_payload.get("aligned_features") or {}
+
+    if isinstance(voice_payload, dict):
+        voice_components = (
+            voice_payload.get("pca_components")
+            or (voice_payload.get("pca_response") or {}).get("components")
+            or {}
+        )
+
+    if isinstance(text_payload, dict):
+        text_features = text_payload.get("aligned_features") or {}
+
+    combined = {}
+
+    for pc_key in FUSION_PC_KEYS:
+        combined[pc_key] = safe_float_or_zero(voice_components.get(pc_key))
+
+    for face_key in FUSION_FACE_KEYS:
+        combined[face_key] = first_numeric_from_prefixed_features(face_features, face_key)
+
+    for text_key in FUSION_TEXT_KEYS:
+        combined[text_key] = get_text_feature_value(text_features, text_key)
+
+    return combined
+
+
+def validate_fusion_features(features):
+    missing = [key for key in FUSION_EXPECTED_FEATURES if key not in features]
+    if missing:
+        raise RuntimeError(f"Fusion feature payload missing keys: {missing}")
+
+    bad = [
+        key for key, value in features.items()
+        if not isinstance(value, (int, float))
+    ]
+
+    if bad:
+        raise RuntimeError(f"Fusion feature payload has non-numeric values: {bad}")
+
+    return True
+
+
 def safe_vector(value, dimensions):
     """
     Only store pgvector values when the API returns the exact expected length.
@@ -1367,17 +1586,33 @@ def post_text_score(text_features):
 
 
 def post_fusion_score(combined_features):
+    """
+    Send exact flat feature schema to Fusion API.
+
+    Current Fusion API rejected nested keys:
+      face_features, voice_features, text_features
+
+    It expects a flat features object containing:
+      PC1..PC24 + face feature names + text feature names
+    """
     url = normalize_endpoint_url(env_value("FUSION_SCORE_URL", "http://88.222.12.15:8000/predict"), "/predict")
     api_key = env_value("MODEL_API_KEY")
 
     if not api_key:
         raise RuntimeError("MODEL_API_KEY missing")
 
+    validate_fusion_features(combined_features)
+
     headers = build_api_headers(api_key)
     headers["Content-Type"] = "application/json"
 
     start = time.time()
-    resp = requests.post(url, headers=headers, json={"features": combined_features}, timeout=(30, 900))
+    resp = requests.post(
+        url,
+        headers=headers,
+        json={"features": combined_features},
+        timeout=(30, 900),
+    )
     latency = seconds(start)
 
     api_raise(resp, "Fusion scoring")
@@ -1423,14 +1658,33 @@ def get_or_create_phonation_sound(expected_label="", expected_prompt=""):
     )
 
 
-def get_or_create_audio_scenario(scenario_id=""):
-    scenario_code = scenario_id or "default_scenario"
+def get_or_create_audio_scenario(scenario_id="", prompt_text=""):
+    """
+    Create/get scenario safely.
+
+    scenario_code must be short because AudioScenario.scenario_code is max_length=50.
+    Do not store the full prompt inside scenario_code.
+    """
+
+    raw_code = str(scenario_id or "").strip()
+
+    if not raw_code:
+        raw_code = "friend_stress_support"
+
+    # Keep only safe short code characters
+    safe_code = re.sub(r"[^a-zA-Z0-9_-]", "_", raw_code.lower())
+
+    # Prevent varchar(50) database error
+    safe_code = safe_code[:45]
+
+    if not safe_code:
+        safe_code = "default_scenario"
 
     scenario, _ = AudioScenario.objects.get_or_create(
-        scenario_code=scenario_code,
+        scenario_code=safe_code,
         defaults={
             "title": "Scenario Voice Response",
-            "prompt_text": "Respond to the scenario in your own words.",
+            "prompt_text": prompt_text or "Respond to the scenario in your own words.",
             "is_active": True,
         },
     )
@@ -1540,7 +1794,13 @@ def create_pca_pipeline_result_safe(
         else:
             data[field_name] = make_json_safe(value)
 
-    return PcaPipelineResult.objects.create(**data)
+    pca_result, _ = PcaPipelineResult.objects.update_or_create(
+        screening_session=screening_session,
+        phonation_feature=phonation_feature,
+        defaults=data,
+    )
+
+    return pca_result
 
 
 
@@ -2279,6 +2539,7 @@ def upload_scenario_voice_response(request):
         }, status=400)
 
     scenario_id = request.POST.get("scenario_id", "").strip()
+    scenario_prompt = request.POST.get("scenario_prompt", "").strip()
 
     try:
         storage_data = save_uploaded_activity_file(
@@ -2298,7 +2559,10 @@ def upload_scenario_voice_response(request):
             extra_metadata={"scenario_id": scenario_id},
         )
 
-        scenario = get_or_create_audio_scenario(scenario_id)
+        scenario = get_or_create_audio_scenario(
+            scenario_id=scenario_id,
+            prompt_text=scenario_prompt,
+        )
 
         scenario_session = ScenarioSession.objects.create(
             screening_session=session,
@@ -2457,11 +2721,11 @@ def run_multimodal_fusion(request):
         voice_payload = voice_result.result_payload or {}
         text_payload = text_result.result_payload or {}
 
-        combined_features = {
-            "face_features": face_payload.get("aligned_features", {}),
-            "voice_features": voice_payload.get("pca_features") or voice_payload.get("aligned_features", {}),
-            "text_features": text_payload.get("aligned_features", {}),
-        }
+        combined_features = build_fusion_feature_payload(
+            face_payload=face_payload,
+            voice_payload=voice_payload,
+            text_payload=text_payload,
+        )
 
         fusion_response, fusion_latency = post_fusion_score(combined_features)
 
@@ -2479,10 +2743,13 @@ def run_multimodal_fusion(request):
                 "confidence_score": safe_confidence(fusion_response),
                 "final_prediction_json": {
                     "combined_features_count": {
-                        "face": len(combined_features["face_features"]) if isinstance(combined_features["face_features"], dict) else 0,
-                        "voice": len(combined_features["voice_features"]) if isinstance(combined_features["voice_features"], (dict, list)) else 0,
-                        "text": len(combined_features["text_features"]) if isinstance(combined_features["text_features"], dict) else 0,
+                        "total": len(combined_features),
+                        "voice_pc": len(FUSION_PC_KEYS),
+                        "face": len(FUSION_FACE_KEYS),
+                        "text": len(FUSION_TEXT_KEYS),
                     },
+                    "combined_feature_schema": "flat_fusion_schema_v1",
+                    "combined_features": combined_features,
                     "score_response": fusion_response,
                     "latency": {"fusion_post_s": fusion_latency},
                 },

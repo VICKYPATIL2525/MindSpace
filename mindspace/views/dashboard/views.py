@@ -83,7 +83,7 @@ def get_user_analysis_summary(user):
     latest_fusion = (
         FusionPrediction.objects
         .filter(screening_session__user=user)
-        .order_by("-predicted_at")
+        .order_by("-created_at")
         .first()
     )
 
@@ -124,7 +124,7 @@ def get_user_analysis_summary(user):
                 "bipolar": float(latest_fusion.bipolar_score) if latest_fusion.bipolar_score is not None else None,
                 "suicidal": float(latest_fusion.suicidal_score) if latest_fusion.suicidal_score is not None else None,
             },
-            "created_at": latest_fusion.predicted_at,
+            "created_at": latest_fusion.created_at,
             "raw": latest_fusion.final_prediction_json or {},
         }
 
@@ -247,7 +247,7 @@ def build_weekly_scores(user):
     latest_fusion = (
         FusionPrediction.objects
         .filter(screening_session__user=user)
-        .order_by("-predicted_at")
+        .order_by("-created_at")
         .first()
     )
 
