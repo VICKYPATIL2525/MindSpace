@@ -35,4 +35,5 @@ __pycache__/
 .env
 media/
 staticfiles/
-db.sqlite3
+db.sqlite3before_model_fix_backup.sql
+*.sql

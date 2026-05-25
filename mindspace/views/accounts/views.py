@@ -9,6 +9,7 @@ Compatible with the new PostgreSQL models.py where:
 """
 
 from datetime import timedelta
+from urllib.parse import urljoin
 
 from django.conf import settings
 from django.contrib import messages
@@ -58,7 +59,7 @@ def get_or_create_profile(user):
             "account_status": "active",
             "first_name": user.first_name or "",
             "last_name": user.last_name or "",
-            "is_email_verified": bool(user.email),
+            "is_email_verified": False,
             "avatar": "avatar_1.png",
         },
     )
@@ -92,7 +93,7 @@ def role_redirect(user):
             "first_name": user.first_name or "",
             "last_name": user.last_name or "",
             "avatar": "avatar_1.png",
-            "is_email_verified": bool(user.email),
+            "is_email_verified": False,
         }
     )
 
@@ -125,9 +126,21 @@ def cleanup_expired_pending_signups():
 
 
 def send_signup_verification_email(request, pending_signup):
-    verify_url = request.build_absolute_uri(
-        reverse("verify_email", kwargs={"token": str(pending_signup.token)})
-    )
+    """
+    Send signup verification email.
+
+    Uses SITE_BASE_URL when available so the email link is stable.
+    Example:
+        SITE_BASE_URL=http://127.0.0.1:8000
+    """
+    verify_path = reverse("verify_email", kwargs={"token": str(pending_signup.token)})
+
+    site_base_url = getattr(settings, "SITE_BASE_URL", "").strip().rstrip("/")
+
+    if site_base_url:
+        verify_url = urljoin(site_base_url + "/", verify_path.lstrip("/"))
+    else:
+        verify_url = request.build_absolute_uri(verify_path)
 
     subject = "Verify your MindSpace account"
 
@@ -218,9 +231,9 @@ def signup_view(request):
 
         messages.success(
             request,
-            "Verification email sent. Please verify your email within 1 hour."
+            "Verification email sent. Please check your inbox, verify your email, then login."
         )
-        return safe_redirect("verify_success", fallback="/accounts/verify-success/")
+        return safe_redirect("login", fallback="/accounts/login/")
 
     return render(request, "accounts/signup.html")
 
@@ -305,14 +318,12 @@ def verify_email_view(request, token):
     if user.profile.account_status == "pending":
         messages.success(
             request,
-            "Email verified. Counselor account is pending admin approval."
+            "Email verified. Counselor account is pending admin approval. You can login after approval."
         )
-        return safe_redirect("login", fallback="/accounts/login/")
+        return safe_redirect("verify_success", fallback="/accounts/verify-success/")
 
-    login(request, user)
-
-    messages.success(request, "Email verified successfully. Please review the consent page.")
-    return safe_redirect("consent", fallback="/accounts/consent/")
+    messages.success(request, "Email verified successfully. You can now login.")
+    return safe_redirect("verify_success", fallback="/accounts/verify-success/")
 
 
 # ======================================================
@@ -342,6 +353,20 @@ def login_view(request):
 
         if not email or not password:
             messages.error(request, "Email and password are required.")
+            return safe_redirect("accounts:login", "login", fallback="/accounts/login/")
+
+        pending_signup = PendingSignup.objects.filter(email=email).first()
+
+        if pending_signup:
+            if pending_signup.is_expired:
+                pending_signup.delete()
+                messages.error(request, "Your verification link expired. Please sign up again.")
+                return safe_redirect("signup", fallback="/accounts/signup/")
+
+            messages.error(
+                request,
+                "Please verify your email first. Check your inbox for the MindSpace verification link."
+            )
             return safe_redirect("accounts:login", "login", fallback="/accounts/login/")
 
         user = authenticate(request, username=email, password=password)

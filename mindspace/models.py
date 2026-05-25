@@ -89,6 +89,31 @@ class ProcessingStatus(models.TextChoices):
     FAILED = "failed", "Failed"
 
 
+class ActivityStage(models.TextChoices):
+    CHECK_IN = "check_in", "Check In"
+    FACE_VIDEO = "face_video", "Face Video"
+    VOICE_PHONATION = "voice_phonation", "Voice Phonation"
+    SCENARIO_VOICE_RESPONSE = "scenario_voice_response", "Scenario Voice Response"
+    FUSION = "fusion", "Fusion"
+    COMPLETED = "completed", "Completed"
+    ERROR = "error", "Error"
+    ABANDONED = "abandoned", "Abandoned"
+
+
+class ApiHealthStatus(models.TextChoices):
+    HEALTHY = "healthy", "Healthy"
+    DEGRADED = "degraded", "Degraded"
+    DOWN = "down", "Down"
+    UNKNOWN = "unknown", "Unknown"
+
+
+class SeverityLevel(models.TextChoices):
+    LOW = "low", "Low"
+    MEDIUM = "medium", "Medium"
+    HIGH = "high", "High"
+    CRITICAL = "critical", "Critical"
+
+
 class TimeStampedModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -205,7 +230,7 @@ class PlatformScreeningSession(models.Model):
         choices=SessionStatus.choices,
         default=SessionStatus.STARTED,
     )
-    current_activity = models.CharField(max_length=100, blank=True, null=True)
+    current_activity = models.CharField(max_length=50, choices=ActivityStage.choices, blank=True, null=True)
     workflow_stage = models.PositiveIntegerField(default=1)
     completed_activities_count = models.PositiveIntegerField(default=0)
     overall_risk = models.CharField(
@@ -252,6 +277,8 @@ class MediaAsset(TimeStampedModel):
     storage_class = models.CharField(max_length=100, blank=True, null=True)
     object_key = models.TextField()
     cdn_url = models.TextField(blank=True, null=True)
+    is_public = models.BooleanField(default=False)
+    retention_delete_at = models.DateTimeField(blank=True, null=True)
     checksum_hash = models.CharField(max_length=255, blank=True, null=True)
     upload_status = models.CharField(
         max_length=20,
@@ -345,6 +372,7 @@ class FaceFeatureVector(models.Model):
     emotion_scores = models.JSONField(blank=True, null=True)
     head_pose = models.JSONField(blank=True, null=True)
     eye_tracking = models.JSONField(blank=True, null=True)
+    feature_json = models.JSONField(blank=True, null=True)
     blink_rate = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
     embedding_vector = VectorField(dimensions=512, blank=True, null=True)
     model_version = models.CharField(max_length=100, blank=True, null=True)
@@ -378,6 +406,8 @@ class FacialAnalysisResult(models.Model):
     risk_label = models.CharField(max_length=100, blank=True, null=True)
     api_version = models.CharField(max_length=100, blank=True, null=True)
     processed_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         managed = MANAGED_BY_DJANGO
@@ -401,6 +431,12 @@ class PhonationSound(models.Model):
         managed = MANAGED_BY_DJANGO
         db_table = "phonation_sounds"
         ordering = ["sound_order"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["language_code", "sound_character"],
+                name="unique_language_sound_character",
+            ),
+        ]
 
     def __str__(self):
         return f"{self.sound_character} - {self.sound_name}"
@@ -516,9 +552,14 @@ class VoiceAnalysisResult(models.Model):
     stress_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     depression_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     speech_impairment_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    prediction_label = models.CharField(max_length=100, blank=True, null=True)
+    probabilities_json = models.JSONField(blank=True, null=True)
+    raw_response_json = models.JSONField(blank=True, null=True)
     confidence_score = models.DecimalField(max_digits=5, decimal_places=4, blank=True, null=True)
     api_version = models.CharField(max_length=100, blank=True, null=True)
     processed_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         managed = MANAGED_BY_DJANGO
@@ -587,6 +628,10 @@ class Transcript(models.Model):
     )
     transcript_text = models.TextField()
     language_code = models.CharField(max_length=10, blank=True, null=True)
+    stt_provider = models.CharField(max_length=100, blank=True, null=True)
+    stt_model = models.CharField(max_length=100, blank=True, null=True)
+    duration_seconds = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
+    confidence_score = models.DecimalField(max_digits=5, decimal_places=4, blank=True, null=True)
     transcript_json = models.JSONField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -635,9 +680,14 @@ class TextAnalysisResult(models.Model):
     stress_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     depression_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     anxiety_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    prediction_label = models.CharField(max_length=100, blank=True, null=True)
+    probabilities_json = models.JSONField(blank=True, null=True)
+    raw_response_json = models.JSONField(blank=True, null=True)
     confidence_score = models.DecimalField(max_digits=5, decimal_places=4, blank=True, null=True)
     api_version = models.CharField(max_length=100, blank=True, null=True)
     processed_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         managed = MANAGED_BY_DJANGO
@@ -663,8 +713,8 @@ class PcaPipelineResult(models.Model):
         PhonationFeature,
         on_delete=models.CASCADE,
         related_name="pca_pipeline_results",
-        null=True,
-        blank=True
+        null=False,
+        blank=False,
     )
 
     input_feature_count = models.IntegerField(default=0)
@@ -684,11 +734,16 @@ class PcaPipelineResult(models.Model):
     class Meta:
         managed = MANAGED_BY_DJANGO
         db_table = "pca_pipeline_results"
+        indexes = [
+            models.Index(fields=["screening_session", "-created_at"], name="idx_pca_session_created"),
+        ]
         constraints = [
             models.UniqueConstraint(
                 fields=["screening_session", "phonation_feature"],
-                name="unique_pca_per_session_phonation_feature"
-            )
+                name="unique_pca_per_session_phonation_feature",
+            ),
+            models.CheckConstraint(condition=Q(input_feature_count__gte=0), name="pca_input_count_gte_0"),
+            models.CheckConstraint(condition=Q(output_feature_count__gte=0), name="pca_output_count_gte_0"),
         ]
 
     def __str__(self):
@@ -717,9 +772,12 @@ class FusionPrediction(models.Model):
         null=True,
     )
 
+    prediction_label = models.CharField(max_length=100, blank=True, null=True)
+    probabilities_json = models.JSONField(blank=True, null=True)
     confidence_score = models.DecimalField(max_digits=5, decimal_places=4, blank=True, null=True)
     final_prediction_json = models.JSONField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         managed = MANAGED_BY_DJANGO
@@ -740,20 +798,28 @@ class AiApiRegistry(models.Model):
     api_name = models.CharField(max_length=255, unique=True)
     service_type = models.CharField(max_length=100)
     base_url = models.TextField()
-    port = models.IntegerField(unique=True, blank=True, null=True)
+    port = models.IntegerField(blank=True, null=True)
     endpoint_path = models.TextField(blank=True, null=True)
     model_version = models.CharField(max_length=100, blank=True, null=True)
     timeout_seconds = models.PositiveIntegerField(default=30)
     retry_count = models.PositiveIntegerField(default=3)
     is_active = models.BooleanField(default=True)
-    health_status = models.CharField(max_length=50, default="healthy")
+    health_status = models.CharField(max_length=50, choices=ApiHealthStatus.choices, default=ApiHealthStatus.UNKNOWN)
     metadata_json = models.JSONField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         managed = MANAGED_BY_DJANGO
         db_table = "ai_api_registry"
+        indexes = [
+            models.Index(fields=["service_type", "is_active"], name="idx_api_service_active"),
+            models.Index(fields=["health_status"], name="idx_api_health_status"),
+        ]
         constraints = [
+            models.UniqueConstraint(
+                fields=["base_url", "port", "endpoint_path"],
+                name="unique_api_endpoint",
+            ),
             models.CheckConstraint(condition=Q(timeout_seconds__gt=0), name="api_timeout_seconds_gt_0"),
             models.CheckConstraint(condition=Q(retry_count__gte=0), name="api_retry_count_gte_0"),
         ]
@@ -776,9 +842,18 @@ class ApiExecutionLog(models.Model):
         related_name="execution_logs",
         db_column="api_id",
     )
+    activity_type = models.CharField(max_length=50, blank=True, null=True, db_index=True)
+    modality = models.CharField(max_length=20, choices=Modality.choices, blank=True, null=True, db_index=True)
+    endpoint_url = models.TextField(blank=True, null=True)
+    http_method = models.CharField(max_length=10, default="POST")
     request_payload = models.JSONField(blank=True, null=True)
     response_payload = models.JSONField(blank=True, null=True)
+    request_size_bytes = models.BigIntegerField(blank=True, null=True)
+    response_size_bytes = models.BigIntegerField(blank=True, null=True)
     response_status = models.IntegerField(blank=True, null=True)
+    external_request_id = models.CharField(max_length=255, blank=True, null=True)
+    retry_count = models.PositiveSmallIntegerField(default=0)
+    timeout_seconds = models.PositiveIntegerField(blank=True, null=True)
     execution_status = models.CharField(max_length=20, choices=ProcessingStatus.choices, default=ProcessingStatus.PENDING)
     error_message = models.TextField(blank=True, null=True)
     processing_time_ms = models.PositiveIntegerField(blank=True, null=True)
@@ -791,9 +866,14 @@ class ApiExecutionLog(models.Model):
         db_table = "api_execution_logs"
         indexes = [
             models.Index(fields=["screening_session", "-created_at"], name="idx_api_logs_screening"),
+            models.Index(fields=["api", "-created_at"], name="idx_api_logs_api_created"),
+            models.Index(fields=["execution_status", "-created_at"], name="idx_api_logs_status_created"),
+            models.Index(fields=["modality", "-created_at"], name="idx_api_logs_modality_created"),
         ]
         constraints = [
             models.CheckConstraint(condition=Q(processing_time_ms__gte=0) | Q(processing_time_ms__isnull=True), name="api_processing_time_gte_0"),
+            models.CheckConstraint(condition=Q(request_size_bytes__gte=0) | Q(request_size_bytes__isnull=True), name="api_request_size_gte_0"),
+            models.CheckConstraint(condition=Q(response_size_bytes__gte=0) | Q(response_size_bytes__isnull=True), name="api_response_size_gte_0"),
         ]
 
 
@@ -837,7 +917,14 @@ class ModalityResult(models.Model):
     class Meta:
         managed = MANAGED_BY_DJANGO
         db_table = "modality_results"
+        indexes = [
+            models.Index(fields=["screening_session", "modality"], name="idx_modality_session_type"),
+        ]
         constraints = [
+            models.UniqueConstraint(
+                fields=["screening_session", "modality"],
+                name="unique_modality_per_screening_session",
+            ),
             models.CheckConstraint(condition=Q(confidence_score__gte=0, confidence_score__lte=1) | Q(confidence_score__isnull=True), name="modality_confidence_score_0_1"),
         ]
 
@@ -878,7 +965,7 @@ class SecurityEvent(models.Model):
         null=True,
     )
     event_type = models.CharField(max_length=255)
-    severity = models.CharField(max_length=50)
+    severity = models.CharField(max_length=50, choices=SeverityLevel.choices, default=SeverityLevel.LOW)
     ip_address = models.GenericIPAddressField(blank=True, null=True)
     metadata_json = models.JSONField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -887,6 +974,10 @@ class SecurityEvent(models.Model):
         managed = MANAGED_BY_DJANGO
         db_table = "security_events"
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["severity", "-created_at"], name="idx_security_severity_created"),
+            models.Index(fields=["event_type", "-created_at"], name="idx_security_event_created"),
+        ]
 
     def __str__(self):
         return f"{self.severity}: {self.event_type}"

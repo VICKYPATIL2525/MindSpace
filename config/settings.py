@@ -29,10 +29,14 @@ SECRET_KEY = os.environ.get(
 
 DEBUG = os.environ.get("DEBUG", "True") == "True"
 
-ALLOWED_HOSTS = os.environ.get(
-    "ALLOWED_HOSTS",
-    "127.0.0.1,localhost"
-).split(",")
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get(
+        "ALLOWED_HOSTS",
+        "127.0.0.1,localhost"
+    ).split(",")
+    if host.strip()
+]
 
 
 # ============================================================
@@ -244,14 +248,27 @@ DEFAULT_FROM_EMAIL = os.environ.get(
     EMAIL_HOST_USER or "noreply@mindspace.local"
 )
 
+# Base URL used in email verification links.
+# For local laptop testing:
+#     SITE_BASE_URL=http://127.0.0.1:8000
+# For public/phone testing, use your deployed or ngrok URL.
+SITE_BASE_URL = os.environ.get(
+    "SITE_BASE_URL",
+    "http://127.0.0.1:8000"
+).rstrip("/")
+
 
 # ============================================================
 # SESSION / CSRF SETTINGS
 # ============================================================
 
 CSRF_TRUSTED_ORIGINS = [
-    "http://127.0.0.1:8000",
-    "http://localhost:8000",
+    origin.strip()
+    for origin in os.environ.get(
+        "CSRF_TRUSTED_ORIGINS",
+        "http://127.0.0.1:8000,http://localhost:8000"
+    ).split(",")
+    if origin.strip()
 ]
 
 SESSION_COOKIE_HTTPONLY = True
