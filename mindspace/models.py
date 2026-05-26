@@ -114,6 +114,16 @@ class SeverityLevel(models.TextChoices):
     CRITICAL = "critical", "Critical"
 
 
+class MentalHealthLabel(models.TextChoices):
+    NORMAL = "normal", "Normal"
+    BIPOLAR = "bipolar", "Bipolar"
+    ANXIETY = "anxiety", "Anxiety"
+    SUICIDAL_TENDENCY = "suicidal_tendency", "Suicidal Tendency"
+    STRESS = "stress", "Stress"
+    DEPRESSION = "depression", "Depression"
+    UNKNOWN = "unknown", "Unknown"
+
+
 class TimeStampedModel(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -361,35 +371,50 @@ class VideoSession(models.Model):
 
 class FaceFeatureVector(models.Model):
     feature_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
     video_session = models.ForeignKey(
         VideoSession,
         on_delete=models.CASCADE,
         related_name="face_feature_vectors",
         db_column="video_session_id",
     )
-    frame_number = models.PositiveIntegerField()
-    face_landmarks = models.JSONField(blank=True, null=True)
-    emotion_scores = models.JSONField(blank=True, null=True)
-    head_pose = models.JSONField(blank=True, null=True)
-    eye_tracking = models.JSONField(blank=True, null=True)
+
+    # Store all face feature extraction attributes here
+    # Example:
+    # {
+    #   "nod_onset_latency__mean": 0.056,
+    #   "reaction_time_instability_index__range": 0.0,
+    #   "speech_onset_delay__min": 0.0,
+    #   ...
+    # }
     feature_json = models.JSONField(blank=True, null=True)
-    blink_rate = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
-    embedding_vector = VectorField(dimensions=512, blank=True, null=True)
-    model_version = models.CharField(max_length=100, blank=True, null=True)
+
+    # Store complete raw API response if needed
+    raw_response_json = models.JSONField(blank=True, null=True)
+
+    feature_schema_version = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        default="face_63_features_v1",
+    )
+
     api_processed_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         managed = MANAGED_BY_DJANGO
         db_table = "face_feature_vectors"
-        constraints = [
-            models.CheckConstraint(condition=Q(frame_number__gte=0), name="face_frame_number_gte_0"),
-            models.CheckConstraint(condition=Q(blink_rate__gte=0) | Q(blink_rate__isnull=True), name="face_blink_rate_gte_0"),
+        indexes = [
+            models.Index(
+                fields=["video_session", "-created_at"],
+                name="idx_face_feature_video_created",
+            ),
         ]
 
     def __str__(self):
-        return f"Face feature frame {self.frame_number}"
-
+        return f"Face features - {self.feature_id}"
+    
 
 class FacialAnalysisResult(models.Model):
     facial_analysis_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -399,9 +424,15 @@ class FacialAnalysisResult(models.Model):
         related_name="facial_analysis_result",
         db_column="feature_id",
     )
+    normal_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    bipolar_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    anxiety_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    suicidal_tendency_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     stress_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     depression_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
-    anxiety_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    prediction_label = models.CharField(max_length=50, choices=MentalHealthLabel.choices, blank=True, null=True)
+    probabilities_json = models.JSONField(blank=True, null=True)
+    raw_response_json = models.JSONField(blank=True, null=True)
     confidence_score = models.DecimalField(max_digits=5, decimal_places=4, blank=True, null=True)
     risk_label = models.CharField(max_length=100, blank=True, null=True)
     api_version = models.CharField(max_length=100, blank=True, null=True)
@@ -520,25 +551,57 @@ class AudioExtractionResult(models.Model):
 
 class PhonationFeature(models.Model):
     feature_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
     audio_extraction = models.OneToOneField(
         AudioExtractionResult,
         on_delete=models.CASCADE,
         related_name="phonation_feature",
         db_column="audio_extraction_id",
     )
-    pitch_mean = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
-    jitter = models.DecimalField(max_digits=10, decimal_places=6, blank=True, null=True)
-    shimmer = models.DecimalField(max_digits=10, decimal_places=6, blank=True, null=True)
-    hnr = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
-    voice_energy = models.DecimalField(max_digits=10, decimal_places=4, blank=True, null=True)
-    mfcc_features = models.JSONField(blank=True, null=True)
-    embedding_vector = VectorField(dimensions=256, blank=True, null=True)
-    model_version = models.CharField(max_length=100, blank=True, null=True)
+
+    # Store all 6373 voice extraction features here.
+    # Example:
+    # {
+    #   "F0semitoneFrom27.5Hz_sma3nz_amean": 23.52,
+    #   "jitterLocal_sma3nz_amean": 0.012,
+    #   "shimmerLocaldB_sma3nz_amean": 0.33,
+    #   ...
+    # }
+    voice_features_json = models.JSONField(blank=True, null=True)
+
+    # Store complete original Voice Feature Extract API response.
+    raw_response_json = models.JSONField(blank=True, null=True)
+
+    feature_count = models.PositiveIntegerField(default=0)
+
+    feature_schema_version = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        default="voice_6373_features_v1",
+    )
+
     processed_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         managed = MANAGED_BY_DJANGO
         db_table = "phonation_features"
+        indexes = [
+            models.Index(
+                fields=["audio_extraction", "-created_at"],
+                name="idx_phon_feat_ext_created",
+            ),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(feature_count__gte=0),
+                name="phonation_feature_count_gte_0",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Phonation features - {self.feature_id}"
 
 
 class VoiceAnalysisResult(models.Model):
@@ -549,10 +612,14 @@ class VoiceAnalysisResult(models.Model):
         related_name="voice_analysis_result",
         db_column="feature_id",
     )
+    normal_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    bipolar_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    anxiety_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    suicidal_tendency_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     stress_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     depression_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     speech_impairment_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
-    prediction_label = models.CharField(max_length=100, blank=True, null=True)
+    prediction_label = models.CharField(max_length=50, choices=MentalHealthLabel.choices, blank=True, null=True)
     probabilities_json = models.JSONField(blank=True, null=True)
     raw_response_json = models.JSONField(blank=True, null=True)
     confidence_score = models.DecimalField(max_digits=5, decimal_places=4, blank=True, null=True)
@@ -645,28 +712,55 @@ class Transcript(models.Model):
 
 class TextParameterResult(models.Model):
     text_parameter_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
     transcript = models.OneToOneField(
         Transcript,
         on_delete=models.CASCADE,
         related_name="text_parameter_result",
         db_column="transcript_id",
     )
-    sentiment_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
-    emotion_distribution = models.JSONField(blank=True, null=True)
-    keyword_analysis = models.JSONField(blank=True, null=True)
+
+    # Store all text extraction attributes here.
+    # Example:
+    # {
+    #   "total_word_count": 120,
+    #   "unique_word_count": 82,
+    #   "type_token_ratio_ttr": 0.68,
+    #   "moving_average_ttr": 0.55,
+    #   "hapax_legoman_ratio": 0.31,
+    #   "sentence_count": 8,
+    #   "average_sentence_length": 15.0,
+    #   "cognitive_load_score": 0.74,
+    #   "mental_health_label": "stress"
+    # }
     linguistic_features = models.JSONField(blank=True, null=True)
-    embedding_vector = VectorField(dimensions=1536, blank=True, null=True)
+
+    # Store complete original Text Feature Extraction API response.
+    raw_response_json = models.JSONField(blank=True, null=True)
+
+    feature_schema_version = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True,
+        default="text_features_v1",
+    )
+
     api_version = models.CharField(max_length=100, blank=True, null=True)
     processed_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         managed = MANAGED_BY_DJANGO
         db_table = "text_parameter_results"
-        constraints = [
-            models.CheckConstraint(condition=Q(sentiment_score__gte=-100, sentiment_score__lte=100) | Q(sentiment_score__isnull=True),
-                name="text_sentiment_score_minus100_100",
+        indexes = [
+            models.Index(
+                fields=["transcript", "-created_at"],
+                name="idx_text_param_tr_created",
             ),
         ]
+
+    def __str__(self):
+        return f"Text parameters - {self.text_parameter_id}"
 
 
 class TextAnalysisResult(models.Model):
@@ -677,10 +771,13 @@ class TextAnalysisResult(models.Model):
         related_name="text_analysis_result",
         db_column="text_parameter_id",
     )
+    normal_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    bipolar_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    anxiety_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    suicidal_tendency_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     stress_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     depression_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
-    anxiety_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
-    prediction_label = models.CharField(max_length=100, blank=True, null=True)
+    prediction_label = models.CharField(max_length=50, choices=MentalHealthLabel.choices, blank=True, null=True)
     probabilities_json = models.JSONField(blank=True, null=True)
     raw_response_json = models.JSONField(blank=True, null=True)
     confidence_score = models.DecimalField(max_digits=5, decimal_places=4, blank=True, null=True)
@@ -722,7 +819,11 @@ class PcaPipelineResult(models.Model):
 
     raw_features_json = models.JSONField(default=dict, blank=True)
     pca_response_json = models.JSONField(default=dict, blank=True)
+    # pca_components stores dict shape:
+    # {"PC1": value, "PC2": value, ..., "PC24": value}
     pca_components = models.JSONField(default=dict, blank=True)
+    # pca_features stores list shape:
+    # [PC1, PC2, ..., PC24]
     pca_features = models.JSONField(default=list, blank=True)
 
     latency_seconds = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)
@@ -759,11 +860,13 @@ class FusionPrediction(models.Model):
         db_column="screening_session_id",
     )
 
-    anxiety_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
-    depression_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
-    stress_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    normal_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     bipolar_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    anxiety_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    suicidal_tendency_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
     suicidal_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    stress_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
+    depression_score = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True)
 
     overall_risk = models.CharField(
         max_length=20,
@@ -772,7 +875,7 @@ class FusionPrediction(models.Model):
         null=True,
     )
 
-    prediction_label = models.CharField(max_length=100, blank=True, null=True)
+    prediction_label = models.CharField(max_length=50, choices=MentalHealthLabel.choices, blank=True, null=True)
     probabilities_json = models.JSONField(blank=True, null=True)
     confidence_score = models.DecimalField(max_digits=5, decimal_places=4, blank=True, null=True)
     final_prediction_json = models.JSONField(blank=True, null=True)
@@ -911,7 +1014,10 @@ class ModalityResult(models.Model):
         null=True,
     )
     confidence_score = models.DecimalField(max_digits=5, decimal_places=4, blank=True, null=True)
+    # Full model response and summary for this modality.
     result_payload = models.JSONField(blank=True, null=True)
+    # Exact features used by fusion for this modality.
+    fusion_feature_payload = models.JSONField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

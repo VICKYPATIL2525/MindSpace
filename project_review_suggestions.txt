@@ -1,0 +1,133 @@
+MindSpace Project Review - Suggestions and Potential Solutions
+Date: 2026-05-25
+
+============================================================
+PRIORITIZED FINDINGS
+============================================================
+
+1) High - External API configuration key mismatch
+- settings.py defines: VOICE_FEATURE_URL, TEXT_PARAMETER_URL, FUSION_API_URL
+- assessments/views.py uses: VOICE_EXTRACT_URL, TEXT_EXTRACT_URL, FUSION_SCORE_URL
+- This can cause fallback hardcoded endpoints to be used instead of env-configured values.
+
+2) High - Missing template for security dashboard route
+- URL exposes /security/ but view renders templates/security/security_dashboard.html.
+- templates/security/ directory does not exist.
+
+3) High - Long-running external API calls in synchronous request lifecycle
+- Face/voice/text/fusion processing is executed in request handlers with long timeouts and polling.
+- Risk of worker blocking, request timeout, and poor scalability.
+
+4) High - Production security defaults are unsafe
+- SECRET_KEY defaults to empty string.
+- DEBUG defaults to True.
+- SESSION_COOKIE_SECURE and CSRF_COOKIE_SECURE are False.
+
+5) Medium - Session status endpoint may create new session as side effect
+- multimodal_session_status calls helper that creates a session if not found.
+- A read-only status check should not mutate DB state.
+
+6) Medium - Severity enum mismatch in security flow
+- Model SeverityLevel: low, medium, high, critical
+- Security views use default/filters including "info".
+
+7) Medium - pgvector extension migration reliability
+- Initial migration uses VectorField but does not explicitly ensure VectorExtension exists first.
+- Fresh DB migration may fail depending on environment.
+
+8) Medium - Very low test coverage
+- tests.py is basically empty.
+
+9) Medium - API observability models are underused
+- AiApiRegistry and ApiExecutionLog exist, but outbound API calls are not consistently logged there.
+
+
+============================================================
+RECOMMENDED SOLUTIONS (ACTIONABLE)
+============================================================
+
+A) Unify API endpoint settings
+- Pick one canonical variable per service and use it everywhere.
+- Recommended names:
+  FACE_EXTRACT_URL
+  FACE_SCORE_URL
+  VOICE_EXTRACT_URL
+  VOICE_PCA_URL
+  VOICE_SCORE_URL
+  TEXT_EXTRACT_URL
+  TEXT_SCORE_URL
+  FUSION_SCORE_URL
+- Remove hardcoded fallback public IPs from business logic.
+
+B) Add startup config validation (fail fast)
+- On app start, validate required URLs and API keys.
+- Raise clear startup errors if missing, instead of failing during user requests.
+
+C) Move heavy pipeline work to background jobs
+- Use Celery/RQ + Redis.
+- Request flow:
+  1. Upload accepted quickly.
+  2. Job enqueued.
+  3. Frontend polls status endpoint.
+  4. Results persisted asynchronously.
+
+D) Add transactional boundaries per stage
+- Wrap per-stage DB writes in transactions.
+- Ensure partial failures do not leave inconsistent session states.
+
+E) Split settings by environment
+- base.py + development.py + production.py style.
+- In production:
+  DEBUG=False
+  non-empty SECRET_KEY
+  SESSION_COOKIE_SECURE=True
+  CSRF_COOKIE_SECURE=True
+  SECURE_SSL_REDIRECT=True
+  HSTS enabled
+
+F) Fix security template and severity taxonomy
+- Create templates/security/security_dashboard.html or route to existing template.
+- Standardize severity values to one enum and update filters/defaults accordingly.
+
+G) Add pgvector extension migration guard
+- Add migration operation to ensure extension exists before VectorField tables.
+
+H) Build a minimum test suite now
+- Must-have tests:
+  1. Signup/verify/login flow.
+  2. Consent/profile onboarding guards.
+  3. Each modality happy path + failure path.
+  4. Fusion endpoint contract and session state transitions.
+
+I) Implement API execution logging
+- Log every outbound API call with:
+  session_id, modality, endpoint, request_id, status_code, latency, retries, error snippet.
+- Use ApiExecutionLog for debugging and reliability metrics.
+
+
+============================================================
+SUGGESTED IMPLEMENTATION ORDER
+============================================================
+
+Phase 1 (Stability)
+1. Unify endpoint env names and remove hardcoded fallback URLs.
+2. Add startup config validation.
+3. Fix security template route mismatch and severity mismatch.
+4. Make status endpoint read-only (no implicit session creation).
+
+Phase 2 (Production Readiness)
+5. Harden production settings profile.
+6. Add pgvector extension migration safety.
+
+Phase 3 (Scale and Reliability)
+7. Move pipeline to background workers.
+8. Add API execution logs and dashboard metrics.
+9. Add automated tests for critical flows.
+
+
+============================================================
+NOTES
+============================================================
+
+- This document is generated from a static project review.
+- Recommended next step: implement Phase 1 first, then run full integration tests against PostgreSQL and all external APIs.

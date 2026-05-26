@@ -264,6 +264,33 @@ def safe_decimal(value, max_value=None, default=None):
         return default
 
 
+def probability_to_percent(value, default=None):
+    """
+    Convert model probability into 0-100 score column value.
+
+    Examples:
+      0.6785 -> 67.85
+      0.9985 -> 99.85
+      67.85  -> 67.85
+    """
+    number = safe_decimal(value, default=default)
+
+    if number is None:
+        return default
+
+    if number <= Decimal("1"):
+        number = number * Decimal("100")
+
+    if number > Decimal("100"):
+        number = Decimal("100")
+
+    if number < Decimal("0"):
+        number = Decimal("0")
+
+    return number
+
+
+
 def safe_score(payload, *keys, max_value=100):
     if not isinstance(payload, dict):
         return None
@@ -311,6 +338,103 @@ def normalize_confidence_value(value):
         conf = Decimal("0")
 
     return conf
+
+
+def normalize_prediction_label(value):
+    """
+    Normalize external model labels to MentalHealthLabel values stored in DB.
+    """
+    label = str(value or "").strip().lower().replace("-", "_").replace(" ", "_")
+    aliases = {
+        "normal": "normal", "healthy": "normal", "control": "normal",
+        "bipolar": "bipolar", "bipolar_disorder": "bipolar",
+        "anxiety": "anxiety", "anxious": "anxiety",
+        "suicidal": "suicidal_tendency", "suicidal_tendency": "suicidal_tendency",
+        "suicide": "suicidal_tendency", "suicide_risk": "suicidal_tendency",
+        "stress": "stress", "stressed": "stress",
+        "depression": "depression", "depressed": "depression",
+    }
+    return aliases.get(label, "unknown")
+
+
+def pick_prediction_label(payload):
+    """
+    Pick class/prediction label from API response.
+    """
+    if not isinstance(payload, dict):
+        return "unknown"
+
+    for key in ["prediction", "label", "class", "mental_health_label"]:
+        value = payload.get(key)
+        if isinstance(value, str) and value.strip():
+            return normalize_prediction_label(value)
+
+    for key in ["data", "output", "result", "model_output", "score_response"]:
+        nested = payload.get(key)
+        if isinstance(nested, dict):
+            label = pick_prediction_label(nested)
+            if label != "unknown":
+                return label
+
+    return "unknown"
+
+
+def pick_probabilities(payload):
+    """
+    Extract probability/class distribution dictionary from API response.
+    """
+    if not isinstance(payload, dict):
+        return None
+
+    for key in [
+        "probabilities",
+        "class_probabilities",
+        "risk_probabilities",
+        "prediction_probabilities",
+        "label_probabilities",
+    ]:
+        value = payload.get(key)
+        if isinstance(value, dict):
+            return make_json_safe(value)
+
+    for key in ["data", "output", "result", "model_output", "score_response"]:
+        nested = payload.get(key)
+        if isinstance(nested, dict):
+            found = pick_probabilities(nested)
+            if found is not None:
+                return found
+
+    return None
+
+
+def probability_score(payload, label_name):
+    """
+    Read a label probability and convert it to 0-100 score for DB score fields.
+    """
+    probabilities = pick_probabilities(payload) or {}
+    wanted = normalize_prediction_label(label_name)
+
+    for key, value in probabilities.items():
+        if normalize_prediction_label(key) == wanted:
+            score = safe_decimal(value, default=None)
+            if score is None:
+                return None
+            if score <= Decimal("1"):
+                score = score * Decimal("100")
+            return min(score, Decimal("100"))
+
+    return None
+
+
+def score_or_probability(payload, label_name, *keys):
+    """
+    First try direct score keys. If missing, use probabilities[label_name].
+    """
+    direct = safe_score(payload, *keys, max_value=100)
+    if direct is not None:
+        return direct
+    return probability_score(payload, label_name)
+
 
 
 def safe_confidence(payload):
@@ -838,24 +962,35 @@ def create_media_asset(
     storage_data,
     activity_type,
     extra_metadata=None,
+    duration_seconds=None,
 ):
     metadata = storage_data.get("metadata") or {}
     if extra_metadata:
         metadata.update(extra_metadata)
 
-    return MediaAsset.objects.create(
-        user=request.user,
-        media_type=media_type,
-        file_name=getattr(file_obj, "name", "upload"),
-        content_type=getattr(file_obj, "content_type", "") or "application/octet-stream",
-        size_bytes=getattr(file_obj, "size", 0) or 0,
-        storage_provider=storage_data["storage_provider"],
-        bucket_name=storage_data.get("bucket_name") or "",
-        object_key=storage_data["object_key"],
-        cdn_url=storage_data.get("file_url") or "",
-        upload_status="completed",
-        metadata_json=metadata,
-    )
+    model_fields = {field.name for field in MediaAsset._meta.fields}
+
+    data = {
+        "user": request.user,
+        "media_type": media_type,
+        "file_name": getattr(file_obj, "name", "upload"),
+        "content_type": getattr(file_obj, "content_type", "") or "application/octet-stream",
+        "size_bytes": getattr(file_obj, "size", 0) or 0,
+        "storage_provider": storage_data["storage_provider"],
+        "bucket_name": storage_data.get("bucket_name") or "",
+        "object_key": storage_data["object_key"],
+        "cdn_url": storage_data.get("file_url") or "",
+        "upload_status": "completed",
+        "metadata_json": metadata,
+    }
+
+    if "duration_seconds" in model_fields:
+        data["duration_seconds"] = safe_decimal(duration_seconds, default=None)
+
+    if "is_public" in model_fields:
+        data["is_public"] = False
+
+    return MediaAsset.objects.create(**data)
 
 
 def get_local_media_absolute_path(media_asset):
@@ -1721,6 +1856,135 @@ def make_json_safe(value):
     return value
 
 
+def extract_model_score_payload(raw_response):
+    """
+    Extract model scores from the current API response format and keep
+    compatibility with older response formats.
+
+    Current API format supported:
+    {
+        "other_risks": [
+            {"label": "bipolar", "probability": 0.0005},
+            {"label": "normal", "probability": 0.0002}
+        ],
+        "dominant_risk": {
+            "label": "stress",
+            "probability": 0.9985
+        }
+    }
+    """
+    result = {
+        "normal_score": None,
+        "bipolar_score": None,
+        "anxiety_score": None,
+        "suicidal_tendency_score": None,
+        "stress_score": None,
+        "depression_score": None,
+        "prediction_label": "unknown",
+        "probabilities_json": {},
+        "confidence_score": None,
+    }
+
+    if not isinstance(raw_response, dict):
+        return result
+
+    probabilities = {}
+
+    # New API format: dominant_risk + other_risks
+    dominant = raw_response.get("dominant_risk")
+    if isinstance(dominant, dict):
+        label = normalize_prediction_label(dominant.get("label"))
+        probability = dominant.get("probability")
+
+        if label != "unknown":
+            result["prediction_label"] = label
+            probabilities[label] = probability
+
+            field_name = f"{label}_score"
+            if field_name in result:
+                result[field_name] = probability_to_percent(probability, default=None)
+
+            result["confidence_score"] = normalize_confidence_value(probability)
+
+    other_risks = raw_response.get("other_risks")
+    if isinstance(other_risks, list):
+        for item in other_risks:
+            if not isinstance(item, dict):
+                continue
+
+            label = normalize_prediction_label(item.get("label"))
+            probability = item.get("probability")
+
+            if label == "unknown":
+                continue
+
+            probabilities[label] = probability
+
+            field_name = f"{label}_score"
+            if field_name in result:
+                result[field_name] = probability_to_percent(probability, default=None)
+
+    # Old API fallback formats: probabilities / class_probabilities / scores / direct keys
+    if not probabilities:
+        fallback_probabilities = pick_probabilities(raw_response) or {}
+        probabilities = fallback_probabilities if isinstance(fallback_probabilities, dict) else {}
+
+        for label in ["normal", "bipolar", "anxiety", "suicidal_tendency", "stress", "depression"]:
+            field_name = f"{label}_score"
+            result[field_name] = score_or_probability(raw_response, label, field_name, label)
+
+        result["prediction_label"] = pick_prediction_label(raw_response)
+        result["confidence_score"] = safe_confidence(raw_response)
+
+    result["probabilities_json"] = make_json_safe(probabilities)
+
+    if result["confidence_score"] is None:
+        result["confidence_score"] = safe_confidence(raw_response)
+
+    return result
+
+
+def model_field_names(model_class):
+    """Return concrete Django model field names for safe dynamic defaults."""
+    return {field.name for field in model_class._meta.fields}
+
+
+def create_analysis_defaults(model_class, score_response, *, include_speech_impairment=False):
+    """
+    Build safe defaults for FacialAnalysisResult, VoiceAnalysisResult,
+    and TextAnalysisResult from raw score_response.
+    """
+    score_data = extract_model_score_payload(score_response)
+    fields = model_field_names(model_class)
+
+    defaults = {
+        "normal_score": score_data["normal_score"],
+        "bipolar_score": score_data["bipolar_score"],
+        "anxiety_score": score_data["anxiety_score"],
+        "suicidal_tendency_score": score_data["suicidal_tendency_score"],
+        "stress_score": score_data["stress_score"],
+        "depression_score": score_data["depression_score"],
+        "prediction_label": score_data["prediction_label"],
+        "probabilities_json": score_data["probabilities_json"],
+        "raw_response_json": make_json_safe(score_response),
+        "confidence_score": score_data["confidence_score"],
+        "api_version": str(score_response.get("api_version", "")) if isinstance(score_response, dict) else "",
+        "processed_at": timezone.now(),
+    }
+
+    if "risk_label" in fields:
+        defaults["risk_label"] = score_data["prediction_label"]
+
+    if include_speech_impairment and "speech_impairment_score" in fields:
+        defaults["speech_impairment_score"] = safe_score(
+            score_response,
+            "speech_impairment_score",
+            "speech_score",
+        )
+
+    return {key: value for key, value in defaults.items() if key in fields}
+
+
 
 def create_pca_pipeline_result_safe(
     *,
@@ -1834,10 +2098,16 @@ def result_score_summary(result_obj):
     summary = {}
 
     for field_name in [
+        "normal_score",
+        "bipolar_score",
+        "anxiety_score",
+        "suicidal_tendency_score",
+        "suicidal_score",
         "stress_score",
         "depression_score",
-        "anxiety_score",
         "speech_impairment_score",
+        "prediction_label",
+        "probabilities_json",
         "confidence_score",
         "risk_label",
         "api_version",
@@ -1939,6 +2209,15 @@ def create_modality_result(*, session, modality, result_obj, payload, confidence
         "voice_result": None,
         "text_result": None,
     }
+
+    modality_model_fields = {field.name for field in ModalityResult._meta.fields}
+    if "fusion_feature_payload" in modality_model_fields:
+        if modality == "face":
+            defaults["fusion_feature_payload"] = safe_payload.get("aligned_features") or {}
+        elif modality == "voice":
+            defaults["fusion_feature_payload"] = safe_payload.get("pca_components") or {}
+        elif modality == "text":
+            defaults["fusion_feature_payload"] = safe_payload.get("aligned_features") or {}
 
     if modality == "face":
         defaults["face_result"] = result_obj
@@ -2063,6 +2342,7 @@ def upload_face_video(request):
                 "duration_seconds": duration_seconds,
                 "required_duration_seconds": MIN_FACE_VIDEO_SECONDS,
             },
+            duration_seconds=duration_seconds,
         )
 
         activity = get_or_create_default_video_activity(activity_id, activity_title, activity_prompt)
@@ -2119,31 +2399,15 @@ def upload_face_video(request):
 
         face_feature = FaceFeatureVector.objects.create(
             video_session=video_session,
-            frame_number=0,
-            face_landmarks=vector_response.get("face_landmarks") if isinstance(vector_response, dict) else None,
-            emotion_scores=vector_response.get("emotion_scores") if isinstance(vector_response, dict) else None,
-            head_pose=vector_response.get("head_pose") if isinstance(vector_response, dict) else None,
-            eye_tracking=vector_response.get("eye_tracking") if isinstance(vector_response, dict) else None,
-            blink_rate=safe_decimal(aligned_vector.get("blink_rate"), default=None),
-            embedding_vector=pick_embedding(vector_response, 512),
-            model_version=str(extract_response.get("model_version", "")) if isinstance(extract_response, dict) else "",
+            feature_json=aligned_vector,
+            raw_response_json=vector_response,
+            feature_schema_version="face_63_features_v1",
             api_processed_at=timezone.now(),
         )
 
         facial_result = FacialAnalysisResult.objects.create(
             feature=face_feature,
-            stress_score=safe_score(score_response, "stress_score", "stress"),
-            depression_score=safe_score(score_response, "depression_score", "depression"),
-            anxiety_score=safe_score(score_response, "anxiety_score", "anxiety"),
-            confidence_score=safe_confidence(score_response),
-            risk_label=str(
-                score_response.get("risk_label")
-                or score_response.get("label")
-                or score_response.get("prediction")
-                or ""
-            ),
-            api_version=str(score_response.get("api_version", "")),
-            processed_at=timezone.now(),
+            **create_analysis_defaults(FacialAnalysisResult, score_response),
         )
 
         payload = {
@@ -2155,9 +2419,13 @@ def upload_face_video(request):
             "aligned_features": aligned_vector,
             "score_response": score_response,
             "summary": {
-                "stress_score": make_json_safe(facial_result.stress_score),
-                "depression_score": make_json_safe(facial_result.depression_score),
-                "anxiety_score": make_json_safe(facial_result.anxiety_score),
+                "normal_score": make_json_safe(getattr(facial_result, "normal_score", None)),
+                "bipolar_score": make_json_safe(getattr(facial_result, "bipolar_score", None)),
+                "anxiety_score": make_json_safe(getattr(facial_result, "anxiety_score", None)),
+                "suicidal_tendency_score": make_json_safe(getattr(facial_result, "suicidal_tendency_score", None)),
+                "stress_score": make_json_safe(getattr(facial_result, "stress_score", None)),
+                "depression_score": make_json_safe(getattr(facial_result, "depression_score", None)),
+                "prediction_label": getattr(facial_result, "prediction_label", None),
                 "confidence_score": make_json_safe(facial_result.confidence_score),
                 "risk_label": facial_result.risk_label,
             },
@@ -2408,14 +2676,10 @@ def upload_voice_phonation(request):
         phonation_feature, _ = PhonationFeature.objects.update_or_create(
             audio_extraction=audio_extract,
             defaults={
-                "pitch_mean": safe_decimal(aligned_features.get("pitch_mean"), default=None),
-                "jitter": safe_decimal(aligned_features.get("jitter"), default=None),
-                "shimmer": safe_decimal(aligned_features.get("shimmer"), default=None),
-                "hnr": safe_decimal(aligned_features.get("hnr"), default=None),
-                "voice_energy": safe_decimal(aligned_features.get("voice_energy"), default=None),
-                "mfcc_features": extract_response.get("mfcc_features") if isinstance(extract_response, dict) else None,
-                "embedding_vector": pick_embedding(extract_response, 256),
-                "model_version": str(extract_response.get("model_version", "")) if isinstance(extract_response, dict) else "",
+                "voice_features_json": aligned_features,
+                "raw_response_json": extract_response,
+                "feature_count": len(aligned_features) if isinstance(aligned_features, dict) else 0,
+                "feature_schema_version": "voice_6373_features_v1",
                 "processed_at": timezone.now(),
             },
         )
@@ -2432,14 +2696,11 @@ def upload_voice_phonation(request):
 
         voice_result, _ = VoiceAnalysisResult.objects.update_or_create(
             feature=phonation_feature,
-            defaults={
-                "stress_score": safe_score(score_response, "stress_score", "stress"),
-                "depression_score": safe_score(score_response, "depression_score", "depression"),
-                "speech_impairment_score": safe_score(score_response, "speech_impairment_score", "speech_score"),
-                "confidence_score": safe_confidence(score_response),
-                "api_version": str(score_response.get("api_version", "")),
-                "processed_at": timezone.now(),
-            },
+            defaults=create_analysis_defaults(
+                VoiceAnalysisResult,
+                score_response,
+                include_speech_impairment=True,
+            ),
         )
 
         payload = {
@@ -2464,9 +2725,14 @@ def upload_voice_phonation(request):
             "pca_result_id": str(getattr(pca_result, "pk", "")),
             "score_response": score_response,
             "summary": {
-                "stress_score": make_json_safe(voice_result.stress_score),
-                "depression_score": make_json_safe(voice_result.depression_score),
-                "speech_impairment_score": make_json_safe(voice_result.speech_impairment_score),
+                "normal_score": make_json_safe(getattr(voice_result, "normal_score", None)),
+                "bipolar_score": make_json_safe(getattr(voice_result, "bipolar_score", None)),
+                "anxiety_score": make_json_safe(getattr(voice_result, "anxiety_score", None)),
+                "suicidal_tendency_score": make_json_safe(getattr(voice_result, "suicidal_tendency_score", None)),
+                "stress_score": make_json_safe(getattr(voice_result, "stress_score", None)),
+                "depression_score": make_json_safe(getattr(voice_result, "depression_score", None)),
+                "speech_impairment_score": make_json_safe(getattr(voice_result, "speech_impairment_score", None)),
+                "prediction_label": getattr(voice_result, "prediction_label", None),
                 "confidence_score": make_json_safe(voice_result.confidence_score),
             },
             "latency": {
@@ -2601,23 +2867,16 @@ def upload_scenario_voice_response(request):
 
         text_parameter = TextParameterResult.objects.create(
             transcript=transcript,
-            sentiment_score=safe_score(extract_response, "sentiment_score", "sentiment", max_value=100),
-            emotion_distribution=extract_response.get("emotion_distribution") if isinstance(extract_response, dict) else None,
-            keyword_analysis=extract_response.get("keyword_analysis") if isinstance(extract_response, dict) else None,
-            linguistic_features=extract_response.get("linguistic_features") if isinstance(extract_response, dict) else aligned_features,
-            embedding_vector=pick_embedding(extract_response, 1536),
+            linguistic_features=aligned_features,
+            raw_response_json=extract_response,
+            feature_schema_version="text_features_v1",
             api_version=str(extract_response.get("api_version", "")) if isinstance(extract_response, dict) else "",
             processed_at=timezone.now(),
         )
 
         text_result = TextAnalysisResult.objects.create(
             text_parameter=text_parameter,
-            stress_score=safe_score(score_response, "stress_score", "stress"),
-            depression_score=safe_score(score_response, "depression_score", "depression"),
-            anxiety_score=safe_score(score_response, "anxiety_score", "anxiety"),
-            confidence_score=safe_confidence(score_response),
-            api_version=str(score_response.get("api_version", "")),
-            processed_at=timezone.now(),
+            **create_analysis_defaults(TextAnalysisResult, score_response),
         )
 
         payload = {
@@ -2631,9 +2890,13 @@ def upload_scenario_voice_response(request):
             "aligned_features": aligned_features,
             "score_response": score_response,
             "summary": {
-                "stress_score": make_json_safe(text_result.stress_score),
-                "depression_score": make_json_safe(text_result.depression_score),
-                "anxiety_score": make_json_safe(text_result.anxiety_score),
+                "normal_score": make_json_safe(getattr(text_result, "normal_score", None)),
+                "bipolar_score": make_json_safe(getattr(text_result, "bipolar_score", None)),
+                "anxiety_score": make_json_safe(getattr(text_result, "anxiety_score", None)),
+                "suicidal_tendency_score": make_json_safe(getattr(text_result, "suicidal_tendency_score", None)),
+                "stress_score": make_json_safe(getattr(text_result, "stress_score", None)),
+                "depression_score": make_json_safe(getattr(text_result, "depression_score", None)),
+                "prediction_label": getattr(text_result, "prediction_label", None),
                 "confidence_score": make_json_safe(text_result.confidence_score),
             },
             "latency": {
@@ -2709,13 +2972,22 @@ def run_multimodal_fusion(request):
         ).order_by("-created_at").first()
 
         if not face_result:
-            return JsonResponse({"ok": False, "error": "Face result missing. Complete Activity 1 first."}, status=400)
+            return JsonResponse({
+                "ok": False,
+                "error": "Face result missing. Complete Activity 1 first.",
+            }, status=400)
 
         if not voice_result:
-            return JsonResponse({"ok": False, "error": "Voice result missing. Complete Activity 2 first."}, status=400)
+            return JsonResponse({
+                "ok": False,
+                "error": "Voice result missing. Complete Activity 2 first.",
+            }, status=400)
 
         if not text_result:
-            return JsonResponse({"ok": False, "error": "Text result missing. Complete Activity 3 first."}, status=400)
+            return JsonResponse({
+                "ok": False,
+                "error": "Text result missing. Complete Activity 3 first.",
+            }, status=400)
 
         face_payload = face_result.result_payload or {}
         voice_payload = voice_result.result_payload or {}
@@ -2729,31 +3001,88 @@ def run_multimodal_fusion(request):
 
         fusion_response, fusion_latency = post_fusion_score(combined_features)
 
+        # IMPORTANT:
+        # This handles dominant_risk + other_risks response format.
+        score_data = extract_model_score_payload(fusion_response)
+
         overall_risk = pick_final_risk(fusion_response)
+
+        # If API only returns class labels like stress/anxiety/depression,
+        # convert that label into a general risk level for overall_risk.
+        if not overall_risk:
+            if score_data["prediction_label"] == "normal":
+                overall_risk = "low"
+            elif score_data["prediction_label"] == "suicidal_tendency":
+                overall_risk = "critical"
+            else:
+                overall_risk = "moderate"
+
+        fusion_defaults = {
+            "normal_score": score_data["normal_score"],
+            "bipolar_score": score_data["bipolar_score"],
+            "anxiety_score": score_data["anxiety_score"],
+            "suicidal_tendency_score": score_data["suicidal_tendency_score"],
+            "stress_score": score_data["stress_score"],
+            "depression_score": score_data["depression_score"],
+
+            "overall_risk": overall_risk,
+            "prediction_label": score_data["prediction_label"],
+            "probabilities_json": score_data["probabilities_json"],
+            "confidence_score": score_data["confidence_score"],
+
+            "final_prediction_json": {
+                "combined_features_count": {
+                    "total": len(combined_features),
+                    "voice_pc": len(FUSION_PC_KEYS),
+                    "face": len(FUSION_FACE_KEYS),
+                    "text": len(FUSION_TEXT_KEYS),
+                },
+                "combined_feature_schema": "flat_fusion_schema_v1",
+                "combined_features": make_json_safe(combined_features),
+
+                # Full original fusion API response saved here also
+                "score_response": make_json_safe(fusion_response),
+
+                "summary": {
+                    "normal_score": make_json_safe(score_data["normal_score"]),
+                    "bipolar_score": make_json_safe(score_data["bipolar_score"]),
+                    "anxiety_score": make_json_safe(score_data["anxiety_score"]),
+                    "suicidal_tendency_score": make_json_safe(score_data["suicidal_tendency_score"]),
+                    "stress_score": make_json_safe(score_data["stress_score"]),
+                    "depression_score": make_json_safe(score_data["depression_score"]),
+                    "prediction_label": score_data["prediction_label"],
+                    "overall_risk": overall_risk,
+                    "confidence_score": make_json_safe(score_data["confidence_score"]),
+                    "probabilities_json": make_json_safe(score_data["probabilities_json"]),
+                },
+
+                "latency": {
+                    "fusion_post_s": fusion_latency,
+                },
+            },
+        }
+
+        # If your FusionPrediction model has raw_response_json,
+        # save full raw fusion response there too.
+        fusion_model_fields = {field.name for field in FusionPrediction._meta.fields}
+
+        if "raw_response_json" in fusion_model_fields:
+            fusion_defaults["raw_response_json"] = make_json_safe(fusion_response)
+
+        if "api_version" in fusion_model_fields:
+            fusion_defaults["api_version"] = str(
+                fusion_response.get("api_version", "")
+            ) if isinstance(fusion_response, dict) else ""
+
+        if "processed_at" in fusion_model_fields:
+            fusion_defaults["processed_at"] = timezone.now()
+
+        if "suicidal_score" in fusion_model_fields:
+            fusion_defaults["suicidal_score"] = score_data["suicidal_tendency_score"]
 
         prediction, _ = FusionPrediction.objects.update_or_create(
             screening_session=session,
-            defaults={
-                "anxiety_score": safe_score(fusion_response, "anxiety_score", "anxiety"),
-                "depression_score": safe_score(fusion_response, "depression_score", "depression"),
-                "stress_score": safe_score(fusion_response, "stress_score", "stress"),
-                "bipolar_score": safe_score(fusion_response, "bipolar_score", "bipolar"),
-                "suicidal_score": safe_score(fusion_response, "suicidal_score", "suicidal"),
-                "overall_risk": overall_risk,
-                "confidence_score": safe_confidence(fusion_response),
-                "final_prediction_json": {
-                    "combined_features_count": {
-                        "total": len(combined_features),
-                        "voice_pc": len(FUSION_PC_KEYS),
-                        "face": len(FUSION_FACE_KEYS),
-                        "text": len(FUSION_TEXT_KEYS),
-                    },
-                    "combined_feature_schema": "flat_fusion_schema_v1",
-                    "combined_features": combined_features,
-                    "score_response": fusion_response,
-                    "latency": {"fusion_post_s": fusion_latency},
-                },
-            },
+            defaults=fusion_defaults,
         )
 
         session.overall_risk = overall_risk
@@ -2775,8 +3104,9 @@ def run_multimodal_fusion(request):
             "ok": True,
             "message": "Multimodal fusion completed successfully.",
             "session_id": str(session.screening_session_id),
-            "prediction_id": str(prediction.prediction_id),
+            "prediction_id": model_uuid_or_pk(prediction),
             "overall_risk": prediction.overall_risk,
+            "prediction_label": prediction.prediction_label,
             "confidence_score": prediction.confidence_score,
             "fusion_result": fusion_response,
             "redirect_url": "/assessments/activity-complete/",
