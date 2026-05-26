@@ -130,6 +130,11 @@ urlpatterns = [
         name="scenario_voice_response",
     ),
     path(
+        "voice-phonation/complete/",
+        assessment_views.complete_voice_phonation,
+        name="complete_voice_phonation",
+    ),
+    path(
         "assessments/activity-complete/",
         assessment_views.activity_complete_view,
         name="activity_complete",

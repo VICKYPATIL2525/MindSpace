@@ -12,7 +12,7 @@
       <div>
         <span class="activity-badge">Activity 2</span>
         <h1>Voice Phonation Activity</h1>
-        <p>Speak the shown Hindi vocal sound clearly. After a good hold, MindSpace will auto-submit it through Feature Extraction → PCA → Scoring.</p>
+        <p>Speak the shown Hindi vocal sound clearly. After each good hold, MindSpace saves the sound. After all 7 sounds, it combines them and runs Feature Extraction → PCA → Scoring.</p>
       </div>
 
       <div class="score-box">
@@ -107,7 +107,7 @@
             <div class="hold-fill" id="holdFill"></div>
           </div>
 
-          <small>Hold the sound steadily. After the circle completes, it auto-submits for 6373-feature extraction, PCA, and scoring.</small>
+          <small>Hold the sound steadily. After the circle completes, it auto-saves. Final analysis runs after all 7 sounds.</small>
         </div>
 
         <div class="button-row">
@@ -1081,10 +1081,9 @@
     startBtn.disabled = true;
     stopBtn.disabled = true;
 
-    setStatus("Uploading audio to backend pipeline...");
-    pipelineState.textContent = "Uploading";
+    setStatus("Saving this sound...");
+    pipelineState.textContent = "Saving";
     setPipelineStep("record", "done");
-    setPipelineStep("extract", "active");
 
     const t = task();
 
@@ -1109,35 +1108,30 @@
       const data = await response.json();
 
       if (!response.ok || !data.ok || data.passed === false) {
-        throw new Error(data.reason || data.error || "Sound verification failed.");
+        throw new Error(data.reason || data.error || "Sound save failed.");
       }
 
-      const rawCount = data.raw_feature_count || data.rawFeatureCount || "6373";
-      const pcaCount = data.pca_feature_count || data.pcaFeatureCount || "24";
-
-      rawFeatureCount.textContent = rawCount;
-      pcaFeatureCount.textContent = pcaCount;
+      rawFeatureCount.textContent = `${data.completed_sound_count || completed + 1}/7`;
+      pcaFeatureCount.textContent = "Pending";
       pipelineState.textContent = "Saved";
-
-      setPipelineStep("extract", "done");
-      setPipelineStep("pca", "done");
-      setPipelineStep("score", "done");
 
       completed += 1;
       streak += 1;
       index += 1;
 
+      const progress = Math.round((completed / soundTasks.length) * 100);
+      activityProgress.style.width = `${progress}%`;
+      progressPercent.textContent = `${progress}%`;
+      completedText.textContent = `${completed} / ${soundTasks.length} completed`;
+
       if (index >= soundTasks.length) {
-        setStatus("Voice phonation completed. Moving to scenario response...");
-        setTimeout(function () {
-          window.location.href = "{% url 'scenario_voice_response' %}";
-        }, 900);
+        setStatus("All 7 sounds saved. Combining audio and running voice analysis...");
+        await completeVoicePhonation();
         return;
       }
 
-      setStatus("Pipeline completed: 6373 features extracted, PCA reduced to 24, score saved. Next sound ready.");
+      setStatus("Sound saved. Next sound ready.");
       renderTask();
-
       startBtn.disabled = false;
 
     } catch (error) {
@@ -1147,13 +1141,81 @@
       holdCompleted = false;
 
       pipelineState.textContent = "Failed";
-      setPipelineStep("extract", "active");
-
-      setStatus("Backend/API failed: " + error.message);
+      setStatus("Backend failed: " + error.message);
 
       startBtn.disabled = false;
       stopBtn.disabled = true;
       submitBtn.disabled = true;
+    }
+  }
+
+  async function completeVoicePhonation() {
+    startBtn.disabled = true;
+    stopBtn.disabled = true;
+    submitBtn.disabled = true;
+
+    pipelineState.textContent = "Combining";
+    setPipelineStep("extract", "active");
+
+    try {
+      const response = await fetch("{% url 'complete_voice_phonation' %}", {
+        method: "POST",
+        headers: {
+          "X-CSRFToken": csrfToken()
+        }
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || "Voice completion failed.");
+      }
+
+      setStatus("Combined voice processing started. Please wait...");
+      pollVoiceStatus();
+
+    } catch (error) {
+      pipelineState.textContent = "Failed";
+      setStatus("Backend failed: " + error.message);
+      startBtn.disabled = false;
+    }
+  }
+
+  async function pollVoiceStatus() {
+    try {
+      const response = await fetch("/assessments/multimodal/status/");
+      const data = await response.json();
+
+      if (!response.ok || !data.ok) {
+        throw new Error(data.error || "Status check failed.");
+      }
+
+      if (data.status === "failed") {
+        throw new Error(data.error_message || "Voice analysis failed. Check qcluster logs.");
+      }
+
+      if (data.voice_done === true || data.current_activity === "scenario_voice_response") {
+        setPipelineStep("extract", "done");
+        setPipelineStep("pca", "done");
+        setPipelineStep("score", "done");
+        rawFeatureCount.textContent = "6373";
+        pcaFeatureCount.textContent = "24";
+        pipelineState.textContent = "Completed";
+        setStatus("Voice analysis completed. Moving to scenario response...");
+
+        setTimeout(function () {
+          window.location.href = "{% url 'scenario_voice_response' %}";
+        }, 700);
+        return;
+      }
+
+      setStatus("Voice analysis is processing in background...");
+      setTimeout(pollVoiceStatus, 3000);
+
+    } catch (error) {
+      pipelineState.textContent = "Failed";
+      setStatus("Backend failed: " + error.message);
+      startBtn.disabled = false;
     }
   }
 
