@@ -160,10 +160,16 @@ def post_face_score(face_vector):
     api_raise(resp, "Face scoring")
     return resp.json(), latency
 
-def post_voice_extract(audio_file):
+def post_voice_extract(audio_file, filename=None, content_type=None, force_convert=False):
     """
-    Browser records audio as WebM/Opus. Most acoustic feature APIs expect WAV.
-    So we convert the uploaded audio to WAV before sending it to the extraction API.
+    Send audio to Voice Feature Extraction API.
+
+    Browser recordings are usually WebM/Opus, so they are converted to WAV first.
+    If the input is already a WAV file, it is sent directly to avoid double conversion.
+
+    Supports:
+      post_voice_extract(uploaded_webm_file)
+      post_voice_extract(open("combined.wav", "rb"), filename="combined-phonation.wav", content_type="audio/wav")
     """
     url = normalize_endpoint_url(
         env_value("VOICE_EXTRACT_URL", "http://88.222.12.15:5800/extract"),
@@ -172,38 +178,82 @@ def post_voice_extract(audio_file):
 
     api_key = env_value("VOICE_FEATURE_EXTRACT_API_KEY") or env_value("AUDIO_API_KEY")
 
+    if not url:
+        raise RuntimeError("VOICE_EXTRACT_URL missing in settings.py/.env")
+
     if not api_key:
-        raise RuntimeError("VOICE_FEATURE_EXTRACT_API_KEY missing")
+        raise RuntimeError("VOICE_FEATURE_EXTRACT_API_KEY missing in settings.py/.env")
+
+    headers = build_api_headers(api_key)
+
+    upload_filename = filename or getattr(audio_file, "name", "phonation.wav") or "phonation.wav"
+    upload_filename = os.path.basename(str(upload_filename))
+
+    upload_content_type = content_type or getattr(audio_file, "content_type", None) or "application/octet-stream"
+
+    is_wav = (
+        upload_content_type == "audio/wav"
+        or upload_filename.lower().endswith(".wav")
+    )
 
     wav_path = ""
+    close_file_after = False
 
     try:
-        wav_path = convert_audio_to_wav(audio_file)
+        if is_wav and not force_convert:
+            audio_file.seek(0)
+            send_file = audio_file
+            send_filename = upload_filename if upload_filename.lower().endswith(".wav") else "phonation.wav"
+            send_content_type = "audio/wav"
+        else:
+            wav_path = convert_audio_to_wav(audio_file)
+            send_file = open(wav_path, "rb")
+            close_file_after = True
+            send_filename = "phonation.wav"
+            send_content_type = "audio/wav"
 
-        headers = build_api_headers(api_key)
+        files = {
+            "file": (
+                send_filename,
+                send_file,
+                send_content_type,
+            )
+        }
 
-        with open(wav_path, "rb") as wav_file:
-            files = {
-                "file": (
-                    "phonation.wav",
-                    wav_file,
-                    "audio/wav",
-                )
-            }
+        start = time.time()
 
-            start = time.time()
+        try:
             resp = requests.post(
                 url,
                 headers=headers,
                 files=files,
-                timeout=(30, 900),
+                # combined phonation can take longer; keep read timeout generous
+                timeout=(60, 1800),
             )
-            latency = seconds(start)
+        except requests.exceptions.ConnectTimeout:
+            raise RuntimeError(f"Voice Feature Extract API connection timed out: {url}")
+        except requests.exceptions.ReadTimeout:
+            raise RuntimeError(f"Voice Feature Extract API processing timed out: {url}")
+        except requests.exceptions.ConnectionError as exc:
+            raise RuntimeError(
+                f"Voice Feature Extract API connection aborted. URL: {url}. Error: {exc}"
+            )
+        except requests.exceptions.RequestException as exc:
+            raise RuntimeError(
+                f"Voice Feature Extract API request failed. URL: {url}. Error: {exc}"
+            )
 
+        latency = seconds(start)
         api_raise(resp, "Voice feature extraction")
         return resp.json(), latency
 
     finally:
+        if close_file_after:
+            try:
+                send_file.close()
+            except Exception:
+                pass
+
         try:
             if wav_path and os.path.exists(wav_path):
                 os.remove(wav_path)

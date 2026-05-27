@@ -7,34 +7,55 @@
 <div class="complete-page">
   <div class="complete-card">
 
-    <span class="complete-badge">Completed</span>
+    <span class="complete-badge" id="completeBadge">
+      {% if fusion_done or fusion %}Completed{% else %}Submitted{% endif %}
+    </span>
 
-    <h1>MindSpace Activity Completed</h1>
+    <h1 id="completeTitle">
+      {% if fusion_done or fusion %}
+        MindSpace Activity Completed
+      {% else %}
+        MindSpace Activity Submitted
+      {% endif %}
+    </h1>
 
-    <p>
-      Your face video, voice phonation, scenario voice response, and final multimodal analysis have been submitted successfully.
-      A counselor or admin can review the submitted activity data.
+    <p id="completeDescription">
+      {% if fusion_done or fusion %}
+        Your face video, voice phonation, scenario voice response, and final multimodal analysis have been submitted successfully.
+        A counselor or admin can review the submitted activity data.
+      {% else %}
+        Your activities have been submitted successfully. Final text analysis and multimodal fusion may still be running in the background.
+        You can wait here, or return to your dashboard.
+      {% endif %}
     </p>
 
+    <div class="status-box" id="finalStatusBox">
+      {% if fusion_done or fusion %}
+        Final analysis completed successfully.
+      {% else %}
+        Final analysis is running in background...
+      {% endif %}
+    </div>
+
     <div class="complete-summary">
-      <div>
+      <div class="summary-item done" id="stepFace">
         <strong>1</strong>
         <span>Face Video Saved</span>
       </div>
 
-      <div>
+      <div class="summary-item done" id="stepVoice">
         <strong>2</strong>
         <span>Voice Phonation Verified</span>
       </div>
 
-      <div>
+      <div class="summary-item {% if session.completed_activities_count >= 3 or fusion %}done{% else %}processing{% endif %}" id="stepText">
         <strong>3</strong>
-        <span>Scenario Response Analyzed</span>
+        <span>Scenario Response Analyzing</span>
       </div>
 
-      <div>
+      <div class="summary-item {% if fusion_done or fusion %}done{% else %}processing{% endif %}" id="stepFusion">
         <strong>4</strong>
-        <span>Fusion Completed</span>
+        <span>Fusion Processing</span>
       </div>
     </div>
 
@@ -87,6 +108,18 @@
   letter-spacing: 0.07em;
 }
 
+.complete-badge.processing {
+  background: #fffbeb;
+  color: #92400e;
+  border-color: #fbbf24;
+}
+
+.complete-badge.failed {
+  background: #fef2f2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
 .complete-card h1 {
   margin: 18px 0 10px;
   color: #064e3b;
@@ -101,6 +134,29 @@
   font-size: 15px;
 }
 
+.status-box {
+  margin-top: 20px;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1e3a8a;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.status-box.done {
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+  color: #064e3b;
+}
+
+.status-box.failed {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
 .complete-summary {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
@@ -108,30 +164,63 @@
   margin-top: 24px;
 }
 
-.complete-summary div {
+.summary-item {
   padding: 14px;
   border: 1px solid #e2e8f0;
   background: #f8fafc;
   border-radius: 16px;
 }
 
-.complete-summary strong {
+.summary-item strong {
   width: 28px;
   height: 28px;
   display: grid;
   place-items: center;
   border-radius: 999px;
-  background: #ecfdf5;
-  color: #064e3b;
-  border: 1px solid #a7f3d0;
+  background: #e5e7eb;
+  color: #475569;
+  border: 1px solid #cbd5e1;
   font-size: 13px;
   margin-bottom: 8px;
 }
 
-.complete-summary span {
+.summary-item span {
   color: #0f172a;
   font-weight: 800;
   font-size: 13px;
+}
+
+.summary-item.done {
+  border-color: #a7f3d0;
+  background: #ecfdf5;
+}
+
+.summary-item.done strong {
+  background: #059669;
+  color: #ffffff;
+  border-color: #059669;
+}
+
+.summary-item.processing {
+  border-color: #fbbf24;
+  background: #fffbeb;
+}
+
+.summary-item.processing strong {
+  background: #fbbf24;
+  color: #78350f;
+  border-color: #fbbf24;
+}
+
+.summary-item.failed {
+  border-color: #fecaca;
+  background: #fef2f2;
+}
+
+.summary-item.failed strong {
+  background: #ef4444;
+  color: #ffffff;
+  border-color: #ef4444;
 }
 
 .complete-actions {
@@ -188,4 +277,111 @@
   }
 }
 </style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+  "use strict";
+
+  const statusBox = document.getElementById("finalStatusBox");
+  const badge = document.getElementById("completeBadge");
+  const title = document.getElementById("completeTitle");
+  const description = document.getElementById("completeDescription");
+  const stepText = document.getElementById("stepText");
+  const stepFusion = document.getElementById("stepFusion");
+
+  function setDone() {
+    badge.textContent = "Completed";
+    badge.classList.remove("processing", "failed");
+
+    title.textContent = "MindSpace Activity Completed";
+    description.textContent = "Your face video, voice phonation, scenario voice response, and final multimodal analysis have been submitted successfully. A counselor or admin can review the submitted activity data.";
+
+    statusBox.textContent = "Final analysis completed successfully.";
+    statusBox.className = "status-box done";
+
+    stepText.classList.remove("processing", "failed");
+    stepText.classList.add("done");
+    stepText.querySelector("span").textContent = "Scenario Response Analyzed";
+
+    stepFusion.classList.remove("processing", "failed");
+    stepFusion.classList.add("done");
+    stepFusion.querySelector("span").textContent = "Fusion Completed";
+  }
+
+  function setFailed(message) {
+    badge.textContent = "Failed";
+    badge.classList.add("failed");
+
+    title.textContent = "Final Analysis Needs Attention";
+    description.textContent = "Your activity data was submitted, but the final background analysis failed. Please check server logs or try a new check-in.";
+
+    statusBox.textContent = message || "Final analysis failed.";
+    statusBox.className = "status-box failed";
+
+    stepFusion.classList.remove("processing", "done");
+    stepFusion.classList.add("failed");
+    stepFusion.querySelector("span").textContent = "Fusion Failed";
+  }
+
+  function setProcessing(data) {
+    badge.textContent = "Processing";
+    badge.classList.add("processing");
+
+    if (data.text_done) {
+      stepText.classList.remove("processing", "failed");
+      stepText.classList.add("done");
+      stepText.querySelector("span").textContent = "Scenario Response Analyzed";
+    } else {
+      stepText.classList.add("processing");
+      stepText.querySelector("span").textContent = "Scenario Response Analyzing";
+    }
+
+    stepFusion.classList.add("processing");
+
+    if (data.current_activity === "scenario_voice_processing") {
+      statusBox.textContent = "Transcribing and analyzing your scenario response...";
+    } else if (data.current_activity === "fusion_processing" || data.current_activity === "fusion") {
+      statusBox.textContent = "Combining face, voice, and text results...";
+    } else {
+      statusBox.textContent = "Final analysis is running in background...";
+    }
+
+    statusBox.className = "status-box";
+  }
+
+  async function pollFinalStatus() {
+    try {
+      const response = await fetch("/assessments/multimodal/status/");
+      const data = await response.json();
+
+      if (!data.ok) {
+        statusBox.textContent = data.error || "Checking final analysis...";
+        setTimeout(pollFinalStatus, 3000);
+        return;
+      }
+
+      if (data.status === "failed") {
+        setFailed(data.error_message || "Final analysis failed. Please check qcluster/server logs.");
+        return;
+      }
+
+      if (data.fusion_done || data.current_activity === "completed") {
+        setDone();
+        return;
+      }
+
+      setProcessing(data);
+      setTimeout(pollFinalStatus, 3000);
+
+    } catch (error) {
+      statusBox.textContent = "Waiting for final analysis...";
+      setTimeout(pollFinalStatus, 3000);
+    }
+  }
+
+  pollFinalStatus();
+})();
+</script>
 {% endblock %}

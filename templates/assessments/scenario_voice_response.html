@@ -423,6 +423,9 @@
   const serverMessage = document.getElementById("serverMessage");
   const scenarioText = document.getElementById("scenarioText");
 
+  const MIN_DURATION_SECONDS = 15;
+  const MAX_DURATION_SECONDS = 30;
+
   let stream = null;
   let mediaRecorder = null;
   let chunks = [];
@@ -433,13 +436,14 @@
   let dataArray = null;
   let animationId = null;
 
-  const MIN_DURATION_SECONDS = 15;
-  const MAX_DURATION_SECONDS = 30;
-
   let startedAt = null;
   let timerInterval = null;
   let durationSeconds = 0;
   let autoStoppedAtMax = false;
+
+  let scenarioUploadStarted = false;
+  let scenarioUploaded = false;
+  let scenarioUploadFailed = false;
 
   function csrfToken() {
     const input = document.querySelector("[name=csrfmiddlewaretoken]");
@@ -458,6 +462,20 @@
     return `${m}:${s}`;
   }
 
+  function setContinueReady() {
+    btnSubmit.disabled = false;
+    btnSubmit.textContent = "Continue";
+    btnStart.disabled = false;
+    btnRetry.disabled = false;
+  }
+
+  function resetUploadState() {
+    scenarioUploadStarted = false;
+    scenarioUploaded = false;
+    scenarioUploadFailed = false;
+    btnSubmit.textContent = "Submit Response";
+  }
+
   function startTimer() {
     startedAt = Date.now();
     autoStoppedAtMax = false;
@@ -469,7 +487,6 @@
       if (durationSeconds >= MAX_DURATION_SECONDS && !autoStoppedAtMax) {
         autoStoppedAtMax = true;
         stopRecording(true);
-        setMessage("Maximum 30 seconds reached. Review and submit your response.", "success");
       }
     }, 300);
   }
@@ -482,10 +499,11 @@
   }
 
   function monitorVoice() {
+    if (!analyser || !dataArray) return;
+
     analyser.getByteTimeDomainData(dataArray);
 
     let sum = 0;
-
     for (let i = 0; i < dataArray.length; i++) {
       const value = (dataArray[i] - 128) / 128;
       sum += value * value;
@@ -500,15 +518,26 @@
     animationId = requestAnimationFrame(monitorVoice);
   }
 
+  function validDuration() {
+    return durationSeconds >= MIN_DURATION_SECONDS && durationSeconds <= MAX_DURATION_SECONDS;
+  }
+
   async function startRecording() {
     setMessage("", "");
     durationWarning.classList.add("hidden");
     audioPlayer.classList.add("hidden");
+
     audioBlob = null;
     chunks = [];
     durationSeconds = 0;
-    autoStoppedAtMax = false;
     timerText.textContent = "00:00";
+    voiceFill.style.width = "0%";
+    voicePercent.textContent = "0%";
+    resetUploadState();
+
+    btnSubmit.disabled = true;
+    btnStart.disabled = true;
+    btnRetry.classList.add("hidden");
 
     try {
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
@@ -538,27 +567,38 @@
         }
       };
 
-      mediaRecorder.onstop = function () {
+      mediaRecorder.onstop = async function () {
         audioBlob = new Blob(chunks, { type: "audio/webm" });
         audioPlayer.src = URL.createObjectURL(audioBlob);
         audioPlayer.classList.remove("hidden");
 
-        const validDuration = durationSeconds >= MIN_DURATION_SECONDS && durationSeconds <= MAX_DURATION_SECONDS;
+        btnStop.classList.add("hidden");
+        btnRetry.classList.remove("hidden");
+        btnStart.classList.remove("hidden");
+        btnStart.disabled = false;
 
-        btnSubmit.disabled = !validDuration;
-
-        if (durationSeconds < MIN_DURATION_SECONDS) {
-          durationWarning.textContent = "Speak for at least 15 seconds before submitting.";
-          durationWarning.classList.remove("hidden");
-        } else if (durationSeconds > MAX_DURATION_SECONDS) {
-          durationWarning.textContent = "Audio must be 30 seconds or less for transcription.";
-          durationWarning.classList.remove("hidden");
-        } else {
-          durationWarning.classList.add("hidden");
-        }
+        statusDot.classList.remove("recording");
+        micDisplay.classList.remove("recording");
 
         statusText.textContent = "Recording ready";
-        instructionText.textContent = "Review your response, then submit.";
+        instructionText.textContent = "Review your response. Upload starts automatically when valid.";
+
+        if (!validDuration()) {
+          btnSubmit.disabled = true;
+          if (durationSeconds < MIN_DURATION_SECONDS) {
+            durationWarning.textContent = "Speak for at least 15 seconds before submitting.";
+          } else {
+            durationWarning.textContent = "Audio must be 30 seconds or less for transcription.";
+          }
+          durationWarning.classList.remove("hidden");
+          return;
+        }
+
+        durationWarning.classList.add("hidden");
+
+        // Final structure:
+        // once audio is complete, upload immediately.
+        await uploadScenarioInBackground();
       };
 
       mediaRecorder.start();
@@ -568,14 +608,14 @@
       btnStart.classList.add("hidden");
       btnStop.classList.remove("hidden");
       btnRetry.classList.add("hidden");
-      btnSubmit.disabled = true;
 
       statusText.textContent = "Recording...";
       statusDot.classList.add("recording");
       micDisplay.classList.add("recording");
-      instructionText.textContent = "Speak naturally about the scenario.";
+      instructionText.textContent = "Speak naturally. Recording stops automatically at 30 seconds.";
 
     } catch (error) {
+      btnStart.disabled = false;
       setMessage("Microphone permission failed: " + error.message, "error");
     }
   }
@@ -603,16 +643,10 @@
 
       stopTimer();
 
-      btnStop.classList.add("hidden");
-      btnRetry.classList.remove("hidden");
-      btnStart.classList.remove("hidden");
-
-      statusDot.classList.remove("recording");
-      micDisplay.classList.remove("recording");
-
       if (autoStop) {
         statusText.textContent = "30 second limit reached";
-        instructionText.textContent = "Review your response, then submit.";
+        instructionText.textContent = "Recording complete. Uploading in background...";
+        setMessage("Maximum 30 seconds reached. Uploading your response...", "success");
       }
     } catch (error) {
       setMessage("Stop recording failed: " + error.message, "error");
@@ -621,49 +655,62 @@
 
   function retryRecording() {
     audioBlob = null;
+    chunks = [];
+    resetUploadState();
+
     audioPlayer.classList.add("hidden");
     btnSubmit.disabled = true;
-    durationWarning.textContent = "Speak for 15 to 30 seconds before submitting.";
+    btnSubmit.textContent = "Submit Response";
+
     durationWarning.classList.add("hidden");
     setMessage("", "");
+
     durationSeconds = 0;
     autoStoppedAtMax = false;
     timerText.textContent = "00:00";
+    voiceFill.style.width = "0%";
+    voicePercent.textContent = "0%";
+
     statusText.textContent = "Ready to start";
     instructionText.textContent = "Press Start Recording to begin your response.";
+
+    btnStart.disabled = false;
+    btnRetry.disabled = false;
   }
 
-  async function submitScenario() {
+  async function uploadScenarioInBackground() {
+    if (scenarioUploaded) {
+      setContinueReady();
+      return true;
+    }
+
+    if (scenarioUploadStarted) {
+      return false;
+    }
+
     if (!audioBlob) {
-      setMessage("Record audio first.", "error");
-      return;
+      setMessage("No recording found. Please record again.", "error");
+      return false;
     }
 
-    if (durationSeconds < MIN_DURATION_SECONDS) {
-      durationWarning.textContent = "Speak for at least 15 seconds before submitting.";
-      durationWarning.classList.remove("hidden");
-      return;
+    if (!validDuration()) {
+      setMessage("Speak for 15 to 30 seconds before continuing.", "error");
+      return false;
     }
 
-    if (durationSeconds > MAX_DURATION_SECONDS) {
-      durationWarning.textContent = "Audio must be 30 seconds or less for Sarvam transcription.";
-      durationWarning.classList.remove("hidden");
-      return;
-    }
+    scenarioUploadStarted = true;
+    scenarioUploadFailed = false;
 
     btnSubmit.disabled = true;
+    btnSubmit.textContent = "Uploading...";
     btnStart.disabled = true;
     btnRetry.disabled = true;
 
-    setMessage("Uploading scenario response, transcribing audio, and running text analysis...", "");
+    setMessage("Uploading response. Text analysis and fusion will run in background...", "");
 
+    const scenarioPrompt = scenarioText.textContent.trim();
     const formData = new FormData();
     formData.append("audio", audioBlob, "scenario-response.webm");
-    const scenarioPrompt = scenarioText.textContent.trim();
-
-    // IMPORTANT:
-    // scenario_id must be short because backend AudioScenario.scenario_code is max_length=50.
-    // Do not send the full scenario sentence as scenario_id.
     formData.append("scenario_id", "friend_stress_support");
     formData.append("scenario_prompt", scenarioPrompt);
     formData.append("scenario_text", scenarioPrompt);
@@ -685,39 +732,45 @@
         throw new Error(data.error || "Scenario upload failed.");
       }
 
-      setMessage("Scenario response saved. Running final fusion...", "success");
+      scenarioUploaded = true;
+      scenarioUploadStarted = false;
 
-      const fusionResponse = await fetch("{% url 'run_multimodal_fusion' %}", {
-        method: "POST",
-        headers: {
-          "X-CSRFToken": csrfToken()
-        }
-      });
+      statusText.textContent = "Submitted";
+      instructionText.textContent = "Final analysis is running in background. You can continue.";
+      setMessage("Response submitted. You can continue while final analysis runs.", "success");
+      setContinueReady();
 
-      const fusionData = await fusionResponse.json();
-
-      if (!fusionResponse.ok || !fusionData.ok) {
-        throw new Error(fusionData.error || "Fusion failed.");
-      }
-
-      setMessage("All activities completed. Redirecting...", "success");
-
-      setTimeout(function () {
-        window.location.href = "{% url 'activity_complete' %}";
-      }, 900);
+      return true;
 
     } catch (error) {
-      setMessage(error.message, "error");
+      scenarioUploadStarted = false;
+      scenarioUploadFailed = true;
+
       btnSubmit.disabled = false;
+      btnSubmit.textContent = "Try Submit Again";
       btnStart.disabled = false;
       btnRetry.disabled = false;
+
+      setMessage(error.message, "error");
+      return false;
     }
   }
 
+  async function continueToComplete() {
+    if (!scenarioUploaded) {
+      const uploaded = await uploadScenarioInBackground();
+      if (!uploaded) return;
+    }
+
+    window.location.href = "{% url 'activity_complete' %}";
+  }
+
   btnStart.addEventListener("click", startRecording);
-  btnStop.addEventListener("click", stopRecording);
+  btnStop.addEventListener("click", function () {
+    stopRecording(false);
+  });
   btnRetry.addEventListener("click", retryRecording);
-  btnSubmit.addEventListener("click", submitScenario);
+  btnSubmit.addEventListener("click", continueToComplete);
 })();
 </script>
 {% endblock %}

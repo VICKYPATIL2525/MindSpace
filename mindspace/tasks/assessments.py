@@ -7,6 +7,7 @@ import logging
 import os
 
 from django.utils import timezone
+from django_q.tasks import async_task
 
 from mindspace.models import (
     AudioExtractionResult,
@@ -228,10 +229,9 @@ def process_combined_voice_phonation_task(screening_session_id):
         combined_path = combine_audio_files_to_wav(audio_paths, silence_seconds=0.7)
 
         # Save combined audio as a new MediaAsset.
+        # Do NOT assign .name or .content_type to a normal Python file object;
+        # those attributes can be read-only and will crash inside qcluster.
         with open(combined_path, "rb") as combined_file:
-            combined_file.name = "combined-phonation.wav"
-            combined_file.content_type = "audio/wav"
-
             storage_data = save_uploaded_activity_file(
                 file_obj=combined_file,
                 user_id=session.user_id,
@@ -240,28 +240,24 @@ def process_combined_voice_phonation_task(screening_session_id):
                 content_type="audio/wav",
             )
 
-        with open(combined_path, "rb") as combined_file_for_asset:
-            combined_file_for_asset.name = "combined-phonation.wav"
-            combined_file_for_asset.content_type = "audio/wav"
-
-            combined_media = MediaAsset.objects.create(
-                user=session.user,
-                media_type="phonation_audio",
-                file_name="combined-phonation.wav",
-                content_type="audio/wav",
-                size_bytes=os.path.getsize(combined_path),
-                storage_provider=storage_data["storage_provider"],
-                bucket_name=storage_data.get("bucket_name") or "",
-                object_key=storage_data["object_key"],
-                cdn_url=storage_data.get("file_url") or "",
-                upload_status="completed",
-                metadata_json={
-                    "combined": True,
-                    "source_attempt_count": len(selected_attempts),
-                    "source_attempt_ids": [str(item.pk) for item in selected_attempts],
-                    "activity_type": "voice-phonation-combined",
-                },
-            )
+        combined_media = MediaAsset.objects.create(
+            user=session.user,
+            media_type="phonation_audio",
+            file_name="combined-phonation.wav",
+            content_type="audio/wav",
+            size_bytes=os.path.getsize(combined_path),
+            storage_provider=storage_data["storage_provider"],
+            bucket_name=storage_data.get("bucket_name") or "",
+            object_key=storage_data["object_key"],
+            cdn_url=storage_data.get("file_url") or "",
+            upload_status="completed",
+            metadata_json={
+                "combined": True,
+                "source_attempt_count": len(selected_attempts),
+                "source_attempt_ids": [str(item.pk) for item in selected_attempts],
+                "activity_type": "voice-phonation-combined",
+            },
+        )
 
         combined_sound = get_or_create_phonation_sound(
             expected_label="combined_7",
@@ -281,10 +277,11 @@ def process_combined_voice_phonation_task(screening_session_id):
         )
 
         with open(combined_path, "rb") as api_audio:
-            api_audio.name = "combined-phonation.wav"
-            api_audio.content_type = "audio/wav"
-
-            extract_response, extract_latency = post_voice_extract(api_audio)
+            extract_response, extract_latency = post_voice_extract(
+                api_audio,
+                filename="combined-phonation.wav",
+                content_type="audio/wav",
+            )
 
         raw_features = pick_feature_payload(extract_response)
         aligned_features = align_features(raw_features)
@@ -305,6 +302,11 @@ def process_combined_voice_phonation_task(screening_session_id):
         if len(pca_components) != 24:
             raise RuntimeError(
                 f"PCA API returned {len(pca_components)} components. Expected exactly 24."
+            )
+
+        if len(pca_features) != 24 or any(value is None for value in pca_features):
+            raise RuntimeError(
+                f"PCA API returned invalid PCA feature list. Expected PC1-PC24 numeric values."
             )
 
         score_response, score_latency = post_voice_score(pca_components)
@@ -410,6 +412,7 @@ def process_combined_voice_phonation_task(screening_session_id):
         }
 
     except Exception as exc:
+        logger.exception("Combined voice phonation task failed")
         try:
             session = PlatformScreeningSession.objects.get(
                 screening_session_id=screening_session_id
@@ -604,8 +607,26 @@ def process_scenario_voice_task(screening_session_id, scenario_session_id, media
         scenario_session.completed_at = timezone.now()
         scenario_session.save(update_fields=["session_status", "completed_at"])
 
-        update_session_progress(session, current_activity="fusion", completed_count=3, status="processing")
-        return {"ok": True, "next_url": "/assessments/activity-complete/"}
+        # Text result is now saved, so start fusion safely in background.
+        # Frontend should not call run_multimodal_fusion immediately after upload.
+        update_session_progress(
+            session,
+            current_activity="fusion_processing",
+            completed_count=3,
+            status="processing",
+        )
+
+        fusion_task_id = async_task(
+            "mindspace.tasks.assessments.process_fusion_task",
+            str(session.screening_session_id),
+        )
+
+        return {
+            "ok": True,
+            "message": "Scenario analysis completed. Fusion started in background.",
+            "fusion_task_id": fusion_task_id,
+            "next_url": "/assessments/activity-complete/",
+        }
 
     except Exception as exc:
         logger.exception("Scenario voice task failed")

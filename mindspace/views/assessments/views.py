@@ -281,6 +281,12 @@ def activity_complete_view(request):
     return render(request, "assessments/activity_complete.html", {
         "session": session,
         "fusion": fusion,
+        "fusion_done": bool(fusion),
+        "is_processing": session.current_activity in [
+            "scenario_voice_processing",
+            "fusion_processing",
+            "fusion",
+        ],
     })
 
 
@@ -815,6 +821,15 @@ def multimodal_session_status(request):
     elif session.current_activity == "completed":
         next_url = "/assessments/activity-complete/"
 
+    error_message = ""
+    if session.session_status == "failed":
+        metadata = getattr(session, "metadata_json", None) or {}
+        error_message = (
+            metadata.get("last_error")
+            or metadata.get("error")
+            or "Session failed. Check qcluster/server logs."
+        )
+
     return JsonResponse({
         "ok": True,
         "session_id": str(session.screening_session_id),
@@ -830,5 +845,5 @@ def multimodal_session_status(request):
         "final_confidence": fusion.confidence_score if fusion else None,
         "next_url": next_url,
         "redirect_url": next_url,
-        "error_message": "" if session.session_status != "failed" else "Session failed. Check qcluster/server logs.",
+        "error_message": error_message,
     })
