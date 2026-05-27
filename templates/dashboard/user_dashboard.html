@@ -210,6 +210,196 @@
         font-weight: 900;
     }
 
+    .prediction-card {
+        margin-bottom: 12px;
+        padding: 14px;
+        border-radius: 18px;
+        background: #ffffff;
+        border: 1px solid var(--ms-border);
+        box-shadow: var(--ms-shadow);
+    }
+
+    .prediction-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        align-items: flex-start;
+        margin-bottom: 12px;
+    }
+
+    .prediction-label-pill {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 7px 11px;
+        border-radius: 999px;
+        background: var(--ms-green-soft);
+        border: 1px solid var(--ms-green-border);
+        color: var(--ms-green-dark);
+        font-size: 0.74rem;
+        font-weight: 950;
+        text-transform: capitalize;
+    }
+
+    .prediction-meta {
+        color: var(--ms-muted);
+        font-size: 0.72rem;
+        line-height: 1.5;
+    }
+
+    .prediction-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 8px;
+        margin-bottom: 12px;
+    }
+
+    .prediction-mini {
+        padding: 10px;
+        border-radius: 13px;
+        background: #f8fafc;
+        border: 1px solid var(--ms-border);
+    }
+
+    .prediction-mini small {
+        display: block;
+        color: var(--ms-muted);
+        font-size: 0.62rem;
+        font-weight: 900;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+    }
+
+    .prediction-mini strong {
+        display: block;
+        color: var(--ms-text);
+        font-size: 0.78rem;
+        font-weight: 950;
+        text-transform: capitalize;
+    }
+
+    .prediction-table-wrap {
+        overflow-x: auto;
+        border: 1px solid var(--ms-border);
+        border-radius: 14px;
+    }
+
+    .prediction-table {
+        width: 100%;
+        border-collapse: collapse;
+        min-width: 620px;
+        background: #ffffff;
+    }
+
+    .prediction-table th,
+    .prediction-table td {
+        padding: 9px 10px;
+        border-bottom: 1px solid #eef2f7;
+        text-align: left;
+        font-size: 0.74rem;
+    }
+
+    .prediction-table th {
+        background: #f8fafc;
+        color: var(--ms-muted);
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+    }
+
+    .prediction-table td {
+        color: var(--ms-text);
+        font-weight: 800;
+    }
+
+    .prediction-note {
+        margin-top: 10px;
+        color: var(--ms-muted);
+        font-size: 0.72rem;
+        line-height: 1.45;
+    }
+
+    .prediction-empty {
+        padding: 14px;
+        border-radius: 16px;
+        background: #f8fafc;
+        border: 1px dashed var(--ms-border);
+        color: var(--ms-muted);
+        font-size: 0.82rem;
+        font-weight: 800;
+    }
+
+    @media (max-width: 760px) {
+        .prediction-top {
+            display: grid;
+        }
+
+        .prediction-grid {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+
+
+    .today-prediction {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 10px;
+        border-radius: 14px;
+        background: #ffffff;
+        border: 1px solid var(--ms-green-border);
+    }
+
+    .today-prediction-left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        min-width: 0;
+    }
+
+    .prediction-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        background: var(--ms-green-soft);
+        color: var(--ms-green-dark);
+        flex: 0 0 auto;
+    }
+
+    .today-prediction small {
+        display: block;
+        color: var(--ms-muted);
+        font-size: 0.62rem;
+        font-weight: 950;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .today-prediction strong {
+        display: block;
+        margin-top: 2px;
+        color: var(--ms-text);
+        font-size: 0.90rem;
+        font-weight: 950;
+        text-transform: capitalize;
+    }
+
+    .prediction-score-pill {
+        flex: 0 0 auto;
+        padding: 6px 9px;
+        border-radius: 999px;
+        background: var(--ms-green-soft);
+        border: 1px solid var(--ms-green-border);
+        color: var(--ms-green-dark);
+        font-size: 0.68rem;
+        font-weight: 950;
+        white-space: nowrap;
+    }
+
     /* Main hero */
     .hero {
         position: relative;
@@ -750,7 +940,7 @@
             <div class="hero-right">
                 <span class="streak-pill">
                     <span class="material-symbols-outlined text-sm">local_fire_department</span>
-                    {{ current_streak|default:3 }} day streak
+                    {{ current_streak|default:0 }} day streak
                 </span>
 
                 <div class="notification-wrap">
@@ -845,18 +1035,26 @@
             <aside class="today-card">
                 <div class="today-top">
                     <span class="card-kicker">Today’s Activity</span>
-                    <span class="time-pill">2 min</span>
                 </div>
 
-                <div class="today-task">
-                    <div class="task-icon">
-                        <span class="material-symbols-outlined">self_improvement</span>
+
+                <div class="today-prediction">
+                    <div class="today-prediction-left">
+                        <div>
+                            <small>Latest Result</small>
+                            {% if prediction_summary.has_prediction %}
+                                <strong>{{ prediction_summary.latest_label|default:"Unknown"|title }}</strong>
+                            {% else %}
+                                <strong>No result yet</strong>
+                            {% endif %}
+                        </div>
                     </div>
 
-                    <div>
-                        <strong>{{ today_activity_name|default:"Guided Wellness Check" }}</strong>
-                        <span>Only one activity is shown at a time.</span>
-                    </div>
+                    {% if prediction_summary.has_prediction and prediction_summary.latest_confidence %}
+                        <span class="prediction-score-pill">
+                            {{ prediction_summary.latest_confidence|floatformat:1 }}%
+                        </span>
+                    {% endif %}
                 </div>
 
                 <div class="progress-track" aria-label="Today progress">

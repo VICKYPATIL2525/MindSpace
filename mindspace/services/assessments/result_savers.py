@@ -12,6 +12,7 @@ from django.utils import timezone
 from mindspace.models import (
     AudioScenario,
     ModalityResult,
+    UserPredictionSummary,
     PcaPipelineResult,
     PhonationSound,
     VideoActivity,
@@ -999,3 +1000,282 @@ def mark_session_failed(session, error):
         update_fields.append("metadata_json")
 
     session.save(update_fields=update_fields)
+
+
+DISEASE_SCORE_FIELDS = {
+    "normal": "normal_score",
+    "bipolar": "bipolar_score",
+    "anxiety": "anxiety_score",
+    "suicidal_tendency": "suicidal_tendency_score",
+    "stress": "stress_score",
+    "depression": "depression_score",
+}
+
+
+def _safe_float_for_summary(value):
+    try:
+        if value is None or value == "":
+            return None
+        return float(value)
+    except Exception:
+        return None
+
+
+def _get_result_obj_from_modality(modality_result):
+    if not modality_result:
+        return None
+
+    if modality_result.modality == "face":
+        return getattr(modality_result, "face_result", None)
+
+    if modality_result.modality == "voice":
+        return getattr(modality_result, "voice_result", None)
+
+    if modality_result.modality == "text":
+        return getattr(modality_result, "text_result", None)
+
+    return None
+
+
+def _extract_scores_from_result(result_obj):
+    scores = {}
+
+    if not result_obj:
+        for label in DISEASE_SCORE_FIELDS:
+            scores[label] = None
+        return scores
+
+    for label, field_name in DISEASE_SCORE_FIELDS.items():
+        scores[label] = _safe_float_for_summary(getattr(result_obj, field_name, None))
+
+    return scores
+
+
+def _extract_scores_from_fusion_prediction(fusion_prediction):
+    scores = {}
+
+    if not fusion_prediction:
+        for label in DISEASE_SCORE_FIELDS:
+            scores[label] = None
+        return scores
+
+    for label, field_name in DISEASE_SCORE_FIELDS.items():
+        scores[label] = _safe_float_for_summary(getattr(fusion_prediction, field_name, None))
+
+    return scores
+
+
+def _winner_from_scores(scores):
+    clean_scores = {
+        label: score
+        for label, score in (scores or {}).items()
+        if score is not None
+    }
+
+    if not clean_scores:
+        return {
+            "label": "unknown",
+            "score": None,
+        }
+
+    label = max(clean_scores, key=clean_scores.get)
+
+    return {
+        "label": label,
+        "score": clean_scores[label],
+    }
+
+
+def build_disease_score_matrix(*, face_scores, voice_scores, text_scores, fusion_scores):
+    matrix = {}
+
+    for disease_label in DISEASE_SCORE_FIELDS:
+        matrix[disease_label] = {
+            "face": face_scores.get(disease_label),
+            "voice": voice_scores.get(disease_label),
+            "text": text_scores.get(disease_label),
+            "fusion": fusion_scores.get(disease_label),
+        }
+
+    return matrix
+
+
+
+def _aggregate_winner_from_matrix(disease_matrix):
+    """
+    Pick ONE final class from all four model outputs.
+
+    Method:
+      - for each class, collect available Face + Voice + Text + Fusion scores
+      - calculate average score
+      - highest average score becomes latest_prediction_label
+
+    This avoids storing "unknown" when fusion label is missing but scores exist.
+    """
+    best_label = "unknown"
+    best_average = None
+    best_total = None
+    best_count = 0
+    aggregate_scores = {}
+
+    for label, scores in (disease_matrix or {}).items():
+        if not isinstance(scores, dict):
+            continue
+
+        values = []
+        for source in ["face", "voice", "text", "fusion"]:
+            score = _safe_float_for_summary(scores.get(source))
+            if score is not None:
+                values.append(score)
+
+        if not values:
+            aggregate_scores[label] = {
+                "total": None,
+                "average": None,
+                "count": 0,
+            }
+            continue
+
+        total = sum(values)
+        average = total / len(values)
+
+        aggregate_scores[label] = {
+            "total": total,
+            "average": average,
+            "count": len(values),
+        }
+
+        if best_average is None or average > best_average:
+            best_label = label
+            best_average = average
+            best_total = total
+            best_count = len(values)
+
+    return {
+        "label": best_label,
+        "average_score": best_average,
+        "total_score": best_total,
+        "model_count": best_count,
+        "aggregate_scores": aggregate_scores,
+    }
+
+
+def update_user_prediction_summary(session, fusion_prediction):
+    """
+    Maintains one latest prediction-summary row per user.
+
+    Final displayed class is selected from the highest average probability
+    across Face + Voice + Text + Fusion scores, not from fusion label alone.
+    """
+
+    face_modality = ModalityResult.objects.filter(
+        screening_session=session,
+        modality="face",
+    ).order_by("-created_at").first()
+
+    voice_modality = ModalityResult.objects.filter(
+        screening_session=session,
+        modality="voice",
+    ).order_by("-created_at").first()
+
+    text_modality = ModalityResult.objects.filter(
+        screening_session=session,
+        modality="text",
+    ).order_by("-created_at").first()
+
+    face_result = _get_result_obj_from_modality(face_modality)
+    voice_result = _get_result_obj_from_modality(voice_modality)
+    text_result = _get_result_obj_from_modality(text_modality)
+
+    face_scores = _extract_scores_from_result(face_result)
+    voice_scores = _extract_scores_from_result(voice_result)
+    text_scores = _extract_scores_from_result(text_result)
+    fusion_scores = _extract_scores_from_fusion_prediction(fusion_prediction)
+
+    disease_matrix = build_disease_score_matrix(
+        face_scores=face_scores,
+        voice_scores=voice_scores,
+        text_scores=text_scores,
+        fusion_scores=fusion_scores,
+    )
+
+    modality_winners = {
+        "face": _winner_from_scores(face_scores),
+        "voice": _winner_from_scores(voice_scores),
+        "text": _winner_from_scores(text_scores),
+        "fusion": _winner_from_scores(fusion_scores),
+    }
+
+    aggregate_winner = _aggregate_winner_from_matrix(disease_matrix)
+
+    # ONE final class stored in user_prediction_summaries.
+    latest_label = aggregate_winner.get("label") or "unknown"
+    latest_confidence = _safe_float_for_summary(aggregate_winner.get("average_score"))
+
+    existing = UserPredictionSummary.objects.filter(user=session.user).first()
+
+    previous_label = existing.latest_prediction_label if existing else None
+    previous_confidence = (
+        _safe_float_for_summary(existing.latest_confidence_score)
+        if existing else None
+    )
+    previous_summary = existing.latest_summary_json if existing else None
+    previous_analysis_count = existing.analysis_count if existing else 0
+
+    prediction_changed = bool(previous_label and previous_label != latest_label)
+
+    confidence_delta = None
+    if latest_confidence is not None and previous_confidence is not None:
+        confidence_delta = latest_confidence - previous_confidence
+
+    now = timezone.now()
+
+    latest_summary = {
+        "screening_session_id": str(session.screening_session_id),
+        "fusion_prediction_id": str(getattr(fusion_prediction, "prediction_id", "")),
+        "latest_prediction_label": latest_label,
+        "latest_prediction_source": "aggregate_all",
+        "latest_confidence_score": latest_confidence,
+        "aggregate_winner": aggregate_winner,
+        "disease_score_matrix": disease_matrix,
+        "modality_winners": {
+            **modality_winners,
+            "aggregate": aggregate_winner,
+        },
+        "analyzed_at": now.isoformat(),
+    }
+
+    trend = {
+        "changed_from": previous_label,
+        "changed_to": latest_label,
+        "prediction_changed": prediction_changed,
+        "previous_confidence": previous_confidence,
+        "latest_confidence": latest_confidence,
+        "confidence_delta": confidence_delta,
+    }
+
+    summary, _created = UserPredictionSummary.objects.update_or_create(
+        user=session.user,
+        defaults={
+            "latest_screening_session": session,
+            "latest_fusion_prediction": fusion_prediction,
+            "latest_prediction_label": latest_label,
+            "latest_prediction_source": "aggregate_all",
+            "latest_confidence_score": latest_confidence,
+            "previous_prediction_label": previous_label,
+            "previous_confidence_score": previous_confidence,
+            "prediction_changed": prediction_changed,
+            "disease_score_matrix_json": make_json_safe(disease_matrix),
+            "modality_winners_json": make_json_safe({
+                **modality_winners,
+                "aggregate": aggregate_winner,
+            }),
+            "latest_summary_json": make_json_safe(latest_summary),
+            "previous_summary_json": make_json_safe(previous_summary),
+            "trend_json": make_json_safe(trend),
+            "analysis_count": previous_analysis_count + 1,
+            "last_analyzed_at": now,
+        },
+    )
+
+    return summary

@@ -63,6 +63,7 @@ from mindspace.services.assessments.result_savers import (
     pick_pca_components,
     pick_pca_features,
     update_session_progress,
+    update_user_prediction_summary,
 )
 
 from mindspace.services.assessments.storage import (
@@ -673,6 +674,11 @@ def process_fusion_task(screening_session_id):
                     "latency": {"fusion_post_s": fusion_latency},
                 },
             },
+        )
+
+        update_user_prediction_summary(
+            session=session,
+            fusion_prediction=prediction,
         )
 
         session.overall_risk = overall_risk

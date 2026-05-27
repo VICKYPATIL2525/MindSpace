@@ -896,6 +896,114 @@ class FusionPrediction(models.Model):
         return f"Fusion Prediction - {self.screening_session_id}"
 
 
+class UserPredictionSummary(models.Model):
+    summary_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="prediction_summary",
+        db_column="user_id",
+    )
+
+    latest_screening_session = models.ForeignKey(
+        "PlatformScreeningSession",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="user_prediction_summaries",
+        db_column="latest_screening_session_id",
+    )
+
+    latest_fusion_prediction = models.ForeignKey(
+        "FusionPrediction",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+        related_name="user_prediction_summaries",
+        db_column="latest_fusion_prediction_id",
+    )
+
+    # Highest risk class from latest completed pipeline.
+    latest_prediction_label = models.CharField(max_length=80, blank=True, null=True)
+    latest_prediction_source = models.CharField(
+        max_length=80,
+        blank=True,
+        null=True,
+        help_text="Usually fusion. Fallback can be face, voice, or text.",
+    )
+
+    latest_confidence_score = models.DecimalField(
+        max_digits=6,
+        decimal_places=4,
+        blank=True,
+        null=True,
+    )
+
+    # Previous latest label before this update.
+    previous_prediction_label = models.CharField(max_length=80, blank=True, null=True)
+    previous_confidence_score = models.DecimalField(
+        max_digits=6,
+        decimal_places=4,
+        blank=True,
+        null=True,
+    )
+
+    prediction_changed = models.BooleanField(default=False)
+
+    # Disease row/column matrix.
+    # Example:
+    # {
+    #   "normal": {"face": 10, "voice": 5, "text": 2, "fusion": 3},
+    #   "anxiety": {"face": 30, "voice": 20, "text": 45, "fusion": 50},
+    #   "stress": {"face": 60, "voice": 40, "text": 55, "fusion": 62}
+    # }
+    disease_score_matrix_json = models.JSONField(blank=True, null=True)
+
+    # Highest class per modality.
+    # Example:
+    # {
+    #   "face": {"label": "stress", "score": 60},
+    #   "voice": {"label": "bipolar", "score": 80},
+    #   "text": {"label": "anxiety", "score": 65},
+    #   "fusion": {"label": "bipolar", "score": 91}
+    # }
+    modality_winners_json = models.JSONField(blank=True, null=True)
+
+    # Full latest summary snapshot.
+    latest_summary_json = models.JSONField(blank=True, null=True)
+
+    # Previous summary snapshot before update.
+    previous_summary_json = models.JSONField(blank=True, null=True)
+
+    # Optional simple trend.
+    # Example:
+    # {
+    #   "changed_from": "stress",
+    #   "changed_to": "bipolar",
+    #   "confidence_delta": 0.15
+    # }
+    trend_json = models.JSONField(blank=True, null=True)
+
+    analysis_count = models.PositiveIntegerField(default=0)
+
+    last_analyzed_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        managed = MANAGED_BY_DJANGO
+        db_table = "user_prediction_summaries"
+        indexes = [
+            models.Index(fields=["user"], name="idx_user_pred_summary_user"),
+            models.Index(fields=["-last_analyzed_at"], name="idx_user_pred_summary_time"),
+            models.Index(fields=["latest_prediction_label"], name="idx_user_pred_summary_label"),
+        ]
+
+    def __str__(self):
+        return f"{self.user_id} - {self.latest_prediction_label or 'no prediction'}"
+
+
 class AiApiRegistry(models.Model):
     api_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     api_name = models.CharField(max_length=255, unique=True)

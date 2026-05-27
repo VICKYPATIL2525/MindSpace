@@ -24,6 +24,7 @@ from .models import (
     AiApiRegistry,
     ApiExecutionLog,
     ModalityResult,
+    UserPredictionSummary,
     AuditLog,
     SecurityEvent,
 )
@@ -48,6 +49,32 @@ class MediaAssetAdmin(admin.ModelAdmin):
     list_display = ("media_id", "user", "media_type", "file_name", "upload_status", "storage_provider", "created_at")
     list_filter = ("media_type", "upload_status", "storage_provider")
     search_fields = ("user__username", "file_name", "object_key")
+
+@admin.register(UserPredictionSummary)
+class UserPredictionSummaryAdmin(admin.ModelAdmin):
+    list_display = (
+        "user",
+        "latest_prediction_label",
+        "latest_confidence_score",
+        "prediction_changed",
+        "analysis_count",
+        "last_analyzed_at",
+    )
+    list_filter = (
+        "latest_prediction_label",
+        "prediction_changed",
+        "last_analyzed_at",
+    )
+    search_fields = (
+        "user__username",
+        "user__email",
+        "latest_prediction_label",
+    )
+    readonly_fields = (
+        "summary_id",
+        "created_at",
+        "updated_at",
+    )
 
 
 admin.site.register(VideoActivity)

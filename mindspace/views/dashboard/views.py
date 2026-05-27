@@ -4,11 +4,14 @@ from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse, HttpResponseForbidden
 from django.shortcuts import render, redirect
 from django.views.decorators.http import require_POST
+from datetime import timedelta
+from django.utils import timezone
 
 from mindspace.models import (
     AuditLog,
     FusionPrediction,
     ModalityResult,
+    UserPredictionSummary,
     PlatformScreeningSession,
     SecurityEvent,
     UserProfile
@@ -43,6 +46,55 @@ def role_required(*allowed_roles):
 
     return decorator
 
+def get_user_streak(user):
+    """
+    Counts consecutive days where the user completed a full screening session.
+
+    Rules:
+    - Only completed sessions count.
+    - Multiple sessions on same day count as one day.
+    - If user completed today, streak starts from today.
+    - If user has not completed today but completed yesterday, streak is still active.
+    - If no completed session today/yesterday, streak is 0.
+    """
+
+    completed_dates = (
+        PlatformScreeningSession.objects
+        .filter(
+            user=user,
+            session_status="completed",
+            completed_at__isnull=False,
+        )
+        .values_list("completed_at", flat=True)
+    )
+
+    completed_day_set = {
+        timezone.localtime(item).date()
+        for item in completed_dates
+        if item
+    }
+
+    if not completed_day_set:
+        return 0
+
+    today = timezone.localdate()
+    yesterday = today - timedelta(days=1)
+
+    if today in completed_day_set:
+        cursor_day = today
+    elif yesterday in completed_day_set:
+        cursor_day = yesterday
+    else:
+        return 0
+
+    streak = 0
+
+    while cursor_day in completed_day_set:
+        streak += 1
+        cursor_day -= timedelta(days=1)
+
+    return streak
+
 
 # ============================================================
 # PAGE VIEWS
@@ -66,6 +118,63 @@ def learn_more_page(request):
 
 def under_maintenance_view(request):
     return render(request, "dashboard/under_maintenance.html")
+
+def get_user_prediction_dashboard_data(user):
+    summary = UserPredictionSummary.objects.filter(user=user).first()
+
+    if not summary:
+        return {
+            "has_prediction": False,
+            "latest_label": "No analysis yet",
+            "latest_confidence": None,
+            "prediction_changed": False,
+            "analysis_count": 0,
+            "last_analyzed_at": None,
+            "rows": [],
+            "modality_winners": {},
+            "trend": {},
+        }
+
+    disease_matrix = summary.disease_score_matrix_json or {}
+    modality_winners = summary.modality_winners_json or {}
+    trend = summary.trend_json or {}
+
+    disease_labels = [
+        ("normal", "Normal"),
+        ("bipolar", "Bipolar"),
+        ("anxiety", "Anxiety"),
+        ("suicidal_tendency", "Suicidal Tendency"),
+        ("stress", "Stress"),
+        ("depression", "Depression"),
+    ]
+
+    rows = []
+
+    for key, label in disease_labels:
+        scores = disease_matrix.get(key, {})
+
+        rows.append({
+            "key": key,
+            "label": label,
+            "face": scores.get("face"),
+            "voice": scores.get("voice"),
+            "text": scores.get("text"),
+            "fusion": scores.get("fusion"),
+        })
+
+    return {
+        "has_prediction": True,
+        "latest_label": summary.latest_prediction_label or "Unknown",
+        "latest_confidence": summary.latest_confidence_score,
+        "previous_label": summary.previous_prediction_label,
+        "previous_confidence": summary.previous_confidence_score,
+        "prediction_changed": summary.prediction_changed,
+        "analysis_count": summary.analysis_count,
+        "last_analyzed_at": summary.last_analyzed_at,
+        "rows": rows,
+        "modality_winners": modality_winners,
+        "trend": trend,
+    }
 
 
 # ============================================================
@@ -265,7 +374,9 @@ def build_weekly_scores(user):
 
 @login_required
 def user_dashboard_view(request):
+    current_streak = get_user_streak(request.user)
     analysis_summary = get_user_analysis_summary(request.user)
+    prediction_summary = get_user_prediction_dashboard_data(request.user)
 
     latest_session, activities_completed, activities_total, activity_percent = get_activity_progress(request.user)
 
@@ -274,8 +385,9 @@ def user_dashboard_view(request):
 
     context = {
         "analysis_summary": analysis_summary,
+        "prediction_summary": prediction_summary,
         "latest_session": latest_session,
-
+        "current_streak": current_streak,
         "activities_completed": activities_completed,
         "activities_total": activities_total,
         "activity_percent": activity_percent,
