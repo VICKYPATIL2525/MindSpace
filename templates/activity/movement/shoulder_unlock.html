@@ -1,0 +1,324 @@
+{% extends "layouts/dashboard_base.html" %}
+{% load static %}
+
+{% block title %}Shoulder Unlock Sequence | MindSpace{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+  --ms-card: #ffffff; --ms-text: #0f172a; --ms-muted: #64748b; --ms-border: #e2e8f0;
+  --ms-green: #059669; --ms-green-dark: #064e3b; --ms-green-soft: #ecfdf5; --ms-green-border: #a7f3d0;
+  --ms-blue-soft: #eff6ff; --ms-blue-text: #1d4ed8; --ms-amber-soft: #fffbeb; --ms-amber-text: #92400e;
+  --ms-red: #dc2626; --ms-red-soft: #fef2f2;
+  --ms-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 18px rgba(15, 23, 42, 0.05);
+}
+@keyframes msFadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes msSoftScale { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+@keyframes msFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes recordPulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.45); } 50% { box-shadow: 0 0 0 10px rgba(220, 38, 38, 0); } }
+.dashboard-root { max-width: 1100px; margin: 0 auto; padding: 12px 16px; color: var(--ms-text); font-family: Inter, system-ui, sans-serif; }
+.card { background: var(--ms-card); border: 1px solid var(--ms-border); border-radius: 18px; box-shadow: var(--ms-shadow); }
+.support-hero { display: grid; grid-template-columns: 1.35fr 0.85fr; gap: 16px; animation: msFadeUp 0.45s ease forwards; }
+.hero-main { padding: 22px; animation: msSoftScale 0.45s ease forwards; }
+.page-badge { display: inline-flex; padding: 5px 12px; border-radius: 999px; background: var(--ms-green-soft); color: var(--ms-green-dark); border: 1px solid #a7f3d0; font-size: 0.72rem; font-weight: 900; text-transform: uppercase; }
+.manodarpan-card { background: var(--ms-green-soft); border: 1px solid #a7f3d0; border-radius: 22px; box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07); position: relative; overflow: hidden; }
+.hidden { display: none !important; }
+.instruction-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 16px; }
+.instruction-card { border: 1px solid var(--ms-border); border-radius: 14px; overflow: hidden; background: #f8fafc; transition: border-color 0.2s, box-shadow 0.2s; }
+.instruction-card.active { border-color: var(--ms-green-border); box-shadow: 0 8px 20px rgba(5, 150, 105, 0.12); }
+.instruction-card img { width: 100%; height: auto; display: block; }
+.instruction-card .step-meta { padding: 10px 12px; }
+.instruction-card .step-label { font-size: 0.65rem; font-weight: 900; color: var(--ms-muted); text-transform: uppercase; letter-spacing: 0.05em; }
+.instruction-card .step-title { font-size: 0.88rem; font-weight: 800; margin-top: 2px; }
+.instruction-card .step-time { font-size: 0.72rem; color: var(--ms-green-dark); font-weight: 700; margin-top: 4px; }
+.camera-panel { border: 1px solid var(--ms-border); border-radius: 18px; padding: 16px; background: #f8fafc; }
+.camera-panel h3 { margin: 0 0 4px; font-size: 1rem; font-weight: 900; }
+.camera-panel p { margin: 0 0 12px; font-size: 0.78rem; color: var(--ms-muted); line-height: 1.4; }
+.camera-video-wrap { position: relative; border-radius: 14px; overflow: hidden; background: #0f172a; aspect-ratio: 4/3; }
+.camera-video { width: 100%; height: 100%; object-fit: cover; display: block; }
+.camera-placeholder { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #94a3b8; font-size: 0.82rem; text-align: center; padding: 16px; gap: 8px; }
+.recording-badge { position: absolute; top: 10px; left: 10px; display: none; align-items: center; gap: 6px; padding: 5px 10px; border-radius: 999px; background: rgba(220, 38, 38, 0.92); color: #fff; font-size: 0.68rem; font-weight: 900; }
+.recording-badge.visible { display: inline-flex; }
+.recording-badge::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #fff; animation: recordPulse 1.2s infinite; }
+.camera-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.btn-camera, .btn-record, .primary-btn, .secondary-btn { padding: 11px 16px; border-radius: 12px; font-weight: 700; font-size: 0.85rem; cursor: pointer; border: none; font-family: inherit; }
+.btn-camera { background: #fff; border: 1px solid var(--ms-border); color: var(--ms-text); flex: 1; }
+.btn-record { background: var(--ms-green-dark); color: #fff; flex: 1; }
+.btn-record.recording { background: var(--ms-red); animation: recordPulse 1.5s infinite; }
+.btn-record:disabled { opacity: 0.5; cursor: not-allowed; }
+.primary-btn { background: linear-gradient(135deg, var(--ms-green-dark), var(--ms-green)); color: #fff; width: 100%; padding: 14px; font-size: 1rem; margin-top: 12px; }
+.secondary-btn { background: #fff; border: 1px solid var(--ms-border); color: var(--ms-text); flex: 1; }
+.session-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; max-width: 920px; margin: 0 auto; }
+.session-instruction img { width: 100%; border-radius: 14px; border: 1px solid var(--ms-border); }
+.session-timer { font-size: 3rem; font-weight: 900; text-align: center; margin: 12px 0; }
+.session-step-title { font-size: 1.35rem; font-weight: 900; text-align: center; }
+.progress-bar-container { height: 8px; background: var(--ms-border); border-radius: 999px; overflow: hidden; margin: 16px 0; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--ms-green-dark), var(--ms-green)); transition: width 0.15s linear; }
+.camera-note { font-size: 0.72rem; color: var(--ms-muted); margin-top: 8px; }
+@media (max-width: 900px) { .support-hero, .session-layout { grid-template-columns: 1fr; } .instruction-grid { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-root ms-animate" data-activity-id="shoulder_unlock">
+
+    <div id="screen-landing">
+        <div class="support-hero">
+            <div class="card hero-main">
+                <span class="page-badge">Calm Movement</span>
+                <h1 style="font-size:2rem;font-weight:900;margin:12px 0 8px;">Shoulder Unlock Sequence</h1>
+                <p style="color:var(--ms-muted);line-height:1.55;margin:0 0 8px;">Follow each illustrated step. Complete slow shoulder rolls and stretches.</p>
+                <p style="font-size:0.85rem;font-weight:700;color:var(--ms-green-dark);">Duration: 3 minutes</p>
+                <div class="instruction-grid" id="landing-steps"></div>
+                <button type="button" id="btn-start" class="primary-btn">Start Activity</button>
+            </div>
+            <div class="camera-panel card" style="box-shadow:var(--ms-shadow);">
+                <h3>Activity Camera</h3>
+                <p>Enable your camera before starting. Recording captures your session while you move.</p>
+                <div class="camera-video-wrap">
+                    <video id="camera-preview" class="camera-video hidden" autoplay playsinline muted></video>
+                    <div id="camera-placeholder" class="camera-placeholder">
+                        <span style="font-size:2rem;">📷</span>
+                        <span>Camera off — tap Enable Camera</span>
+                    </div>
+                    <span id="recording-badge" class="recording-badge">REC</span>
+                </div>
+                <div class="camera-actions">
+                    <button type="button" id="btn-enable-camera" class="btn-camera">Enable Camera</button>
+                    <button type="button" id="btn-start-recording" class="btn-record" disabled>Start Recording</button>
+                </div>
+                <p class="camera-note" id="camera-status">Camera permission required for recording.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-activity" class="hidden">
+        <div class="manodarpan-card" style="padding:24px;">
+            <div class="session-layout">
+                <div class="session-instruction">
+                    <span class="page-badge" id="lbl-step-badge">Step A</span>
+                    <h2 class="session-step-title" id="lbl-step-title">Left Neck Tilt</h2>
+                    <p id="lbl-step-tip" style="text-align:center;color:var(--ms-muted);font-size:0.88rem;"></p>
+                    <img id="session-step-image" src="" alt="Current step instruction" style="margin-top:12px;"/>
+                    <div class="session-timer" id="lbl-timer">20</div>
+                    <div class="progress-bar-container"><div id="progress-fill" class="progress-fill" style="width:0%;"></div></div>
+                    <p style="text-align:center;font-weight:700;font-size:0.85rem;" id="lbl-progress">Step 1 of 4</p>
+                </div>
+                <div class="camera-panel" style="background:#fff;">
+                    <h3>Live Capture</h3>
+                    <p>Your movement is recorded while this activity runs.</p>
+                    <div class="camera-video-wrap">
+                        <video id="camera-preview-active" class="camera-video" autoplay playsinline muted></video>
+                        <span id="recording-badge-active" class="recording-badge">REC</span>
+                    </div>
+                    <div class="camera-actions">
+                        <button type="button" id="btn-start-recording-active" class="btn-record">Start Recording</button>
+                        <button type="button" id="btn-stop-recording-active" class="btn-record hidden" style="background:var(--ms-red);">Stop Recording</button>
+                    </div>
+                    <p class="camera-note" id="recording-status-active">Not recording</p>
+                </div>
+            </div>
+            <div style="display:flex;gap:12px;max-width:520px;margin:20px auto 0;">
+                <button type="button" id="btn-pause" class="secondary-btn">Pause</button>
+                <button type="button" id="btn-finish" class="secondary-btn" style="color:#991b1b;background:var(--ms-red-soft);border-color:#fecaca;">Finish Early</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-completion" class="hidden">
+        <div class="card" style="max-width:520px;margin:24px auto;padding:40px;text-align:center;">
+            <div style="width:56px;height:56px;border-radius:18px;background:var(--ms-green);color:#fff;display:grid;place-items:center;margin:0 auto 16px;font-size:1.6rem;">✓</div>
+            <h2 style="font-weight:900;color:var(--ms-green-dark);">Shoulder Unlock Complete</h2>
+            <p id="stat-summary" style="color:var(--ms-muted);"></p>
+            <p id="stat-recording" style="font-size:0.85rem;color:var(--ms-blue-text);font-weight:700;"></p>
+            <a id="download-recording" class="hidden" href="#" download="shoulder_unlock_session.webm" style="display:inline-block;margin:12px 0;color:var(--ms-green);font-weight:800;">Download session video</a>
+            <button type="button" id="btn-restart" class="primary-btn" style="margin-top:16px;">Do Again</button>
+            <button type="button" id="btn-home" class="secondary-btn" style="width:100%;margin-top:8px;">Back to Overview</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const STEPS = [
+        { key: "A", title: "Shoulder Rolls Forward", duration: 45, image: "{% static 'images/activities/shoulder_unlock/roll_forward.svg' %}", tip: "10 slow forward rolls", timeLabel: "×10 reps" },
+        { key: "B", title: "Shoulder Rolls Backward", duration: 45, image: "{% static 'images/activities/shoulder_unlock/roll_backward.svg' %}", tip: "10 slow backward rolls", timeLabel: "×10 reps" },
+        { key: "C", title: "Cross-Body Arm Stretch", duration: 60, image: "{% static 'images/activities/shoulder_unlock/cross_stretch.svg' %}", tip: "Both sides — switch halfway", timeLabel: "60 sec" },
+        { key: "D", title: "Shoulder Lift + Release", duration: 45, image: "{% static 'images/activities/shoulder_unlock/lift_release.svg' %}", tip: "Lift up, release down slowly", timeLabel: "45 sec" }
+    ];
+
+    const camera = {
+        stream: null, recorder: null, chunks: [], blob: null, isRecording: false,
+        async enable(videoEl) {
+            if (this.stream) { videoEl.srcObject = this.stream; return true; }
+            try {
+                this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" }, audio: false });
+                videoEl.srcObject = this.stream;
+                videoEl.classList.remove("hidden");
+                return true;
+            } catch (e) {
+                console.warn(e);
+                return false;
+            }
+        },
+        startRecording() {
+            if (!this.stream || this.isRecording) return false;
+            this.chunks = [];
+            const mime = MediaRecorder.isTypeSupported("video/webm;codecs=vp9") ? "video/webm;codecs=vp9" : "video/webm";
+            this.recorder = new MediaRecorder(this.stream, { mimeType: mime });
+            this.recorder.ondataavailable = e => { if (e.data.size) this.chunks.push(e.data); };
+            this.recorder.onstop = () => { this.blob = new Blob(this.chunks, { type: "video/webm" }); };
+            this.recorder.start(1000);
+            this.isRecording = true;
+            return true;
+        },
+        stopRecording() {
+            if (!this.recorder || !this.isRecording) return;
+            this.recorder.stop();
+            this.isRecording = false;
+        },
+        stopStream() {
+            if (this.stream) this.stream.getTracks().forEach(t => t.stop());
+            this.stream = null;
+        }
+    };
+
+    let stepIndex = 0, running = false, paused = false, phaseStart = 0, pauseTotal = 0, pauseAt = 0, tick = null, sessionStart = 0;
+
+    function $(id) { return document.getElementById(id); }
+
+    function renderLandingSteps() {
+        $("landing-steps").innerHTML = STEPS.map((s, i) => `
+            <div class="instruction-card" data-index="${i}">
+                <img src="${s.image}" alt="${s.title} instruction" loading="lazy"/>
+                <div class="step-meta">
+                    <div class="step-label">Step ${s.key}</div>
+                    <div class="step-title">${s.title}</div>
+                    <div class="step-time">${s.timeLabel || ("Hold " + s.duration + " sec")}</div>
+                </div>
+            </div>`).join("");
+    }
+
+    function setRecordingUI(on) {
+        ["recording-badge", "recording-badge-active"].forEach(id => $(id).classList.toggle("visible", on));
+        $("btn-start-recording").textContent = on ? "Recording…" : "Start Recording";
+        $("btn-start-recording").classList.toggle("recording", on);
+        $("btn-start-recording-active").classList.toggle("hidden", on);
+        $("btn-stop-recording-active").classList.toggle("hidden", !on);
+        $("recording-status-active").textContent = on ? "Recording in progress" : "Not recording";
+    }
+
+    function show(screen) {
+        ["screen-landing", "screen-activity", "screen-completion"].forEach(id => $(id).classList.toggle("hidden", id !== screen));
+    }
+
+    function highlightStep(i) {
+        document.querySelectorAll(".instruction-card").forEach((el, idx) => el.classList.toggle("active", idx === i));
+    }
+
+    function updateSessionUI() {
+        const s = STEPS[stepIndex];
+        $("lbl-step-badge").textContent = "Step " + s.key;
+        $("lbl-step-title").textContent = s.title;
+        $("lbl-step-tip").textContent = s.tip;
+        $("session-step-image").src = s.image;
+        $("session-step-image").alt = s.title;
+        $("lbl-progress").textContent = "Step " + (stepIndex + 1) + " of " + STEPS.length;
+        highlightStep(stepIndex);
+    }
+
+    function totalDuration() { return STEPS.reduce((a, s) => a + s.duration, 0); }
+
+    function tickSession() {
+        if (!running || paused) return;
+        const s = STEPS[stepIndex];
+        const elapsed = (Date.now() - phaseStart) / 1000;
+        $("lbl-timer").textContent = Math.max(0, Math.ceil(s.duration - elapsed));
+        let doneBefore = 0;
+        for (let i = 0; i < stepIndex; i++) doneBefore += STEPS[i].duration;
+        const overall = (doneBefore + elapsed) / totalDuration() * 100;
+        $("progress-fill").style.width = Math.min(100, overall) + "%";
+        if (elapsed >= s.duration) {
+            stepIndex++;
+            if (stepIndex >= STEPS.length) { endSession(); return; }
+            phaseStart = Date.now();
+            updateSessionUI();
+        }
+    }
+
+    async function enableCameraLanding() {
+        const ok = await camera.enable($("camera-preview"));
+        if (ok) {
+            $("camera-placeholder").classList.add("hidden");
+            $("camera-preview").classList.remove("hidden");
+            $("btn-start-recording").disabled = false;
+            $("camera-status").textContent = "Camera ready. You can start recording.";
+        } else {
+            $("camera-status").textContent = "Could not access camera. Check browser permissions.";
+        }
+    }
+
+  $("btn-enable-camera").onclick = enableCameraLanding;
+
+    function toggleRecording() {
+        if (camera.isRecording) {
+            camera.stopRecording();
+            setRecordingUI(false);
+        } else {
+            if (camera.startRecording()) setRecordingUI(true);
+        }
+    }
+
+    $("btn-start-recording").onclick = toggleRecording;
+    $("btn-start-recording-active").onclick = toggleRecording;
+    $("btn-stop-recording-active").onclick = toggleRecording;
+
+    async function startSession() {
+        const preview = $("camera-preview-active");
+        if (!camera.stream) await camera.enable(preview);
+        else preview.srcObject = camera.stream;
+        show("screen-activity");
+        stepIndex = 0; running = true; paused = false; pauseTotal = 0;
+        sessionStart = phaseStart = Date.now();
+        updateSessionUI();
+        tick = setInterval(tickSession, 200);
+        if (!camera.isRecording && camera.stream) {
+            camera.startRecording();
+            setRecordingUI(true);
+        }
+    }
+
+    function endSession() {
+        running = false;
+        clearInterval(tick);
+        if (camera.isRecording) camera.stopRecording();
+        setRecordingUI(false);
+        const ms = Date.now() - sessionStart - pauseTotal;
+        $("stat-summary").textContent = "Completed " + STEPS.length + " steps in " + Math.floor(ms / 1000) + " seconds.";
+        setTimeout(() => {
+            if (camera.blob) {
+                const url = URL.createObjectURL(camera.blob);
+                $("download-recording").href = url;
+                $("download-recording").classList.remove("hidden");
+                $("stat-recording").textContent = "Session video saved locally.";
+            } else {
+                $("stat-recording").textContent = "No recording saved for this session.";
+            }
+        }, 400);
+        show("screen-completion");
+    }
+
+    $("btn-start").onclick = startSession;
+    $("btn-restart").onclick = () => { show("screen-landing"); startSession(); };
+    $("btn-home").onclick = () => { running = false; clearInterval(tick); camera.stopRecording(); show("screen-landing"); };
+    $("btn-finish").onclick = endSession;
+    $("btn-pause").onclick = () => {
+        paused = !paused;
+        if (paused) { pauseAt = Date.now(); $("btn-pause").textContent = "Resume"; }
+        else { pauseTotal += Date.now() - pauseAt; phaseStart += Date.now() - pauseAt; $("btn-pause").textContent = "Pause"; }
+    };
+
+    renderLandingSteps();
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,196 @@
+{% extends "layouts/dashboard_base.html" %}
+{% load static %}
+
+{% block title %}Resonance Breathing | MindSpace{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+  --ms-card: #ffffff; --ms-text: #0f172a; --ms-muted: #64748b; --ms-border: #e2e8f0;
+  --ms-green: #059669; --ms-green-dark: #064e3b; --ms-green-soft: #ecfdf5; --ms-green-border: #a7f3d0;
+  --ms-blue-soft: #eff6ff; --ms-blue-text: #1d4ed8; --ms-amber-soft: #fffbeb; --ms-amber-text: #92400e;
+  --ms-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 18px rgba(15, 23, 42, 0.05);
+}
+@keyframes msFadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes coherentWave { 0%, 100% { transform: scale(0.82); opacity: 0.85; } 50% { transform: scale(1.22); opacity: 1; } }
+@keyframes msFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+.support-hero { display: grid; grid-template-columns: 1.4fr 0.8fr; gap: 16px; animation: msFadeUp 0.45s ease; }
+.hero-main { padding: 22px; }
+.hero-warning { padding: 18px; display: flex; gap: 12px; background: var(--ms-amber-soft); border-radius: 18px; border: 1px solid #fde68a; }
+.page-badge { display: inline-flex; padding: 5px 12px; border-radius: 999px; background: var(--ms-green-soft); color: var(--ms-green-dark); border: 1px solid #a7f3d0; font-size: 0.72rem; font-weight: 900; text-transform: uppercase; }
+.manodarpan-card { background: var(--ms-green-soft); border: 1px solid #a7f3d0; border-radius: 22px; box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07); }
+.dashboard-root { max-width: 1100px; margin: 0 auto; padding: 16px; font-family: Inter, system-ui, sans-serif; color: var(--ms-text); }
+.card { background: var(--ms-card); border: 1px solid var(--ms-border); border-radius: 18px; box-shadow: var(--ms-shadow); }
+.hidden { display: none !important; }
+.viz-wrap { position: relative; width: 280px; height: 280px; margin: 0 auto; }
+.wave-ring { transform-origin: center; animation: coherentWave 10s ease-in-out infinite; }
+.viz-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+.bpm-pill { display: inline-block; margin-top: 8px; padding: 4px 10px; border-radius: 999px; background: var(--ms-blue-soft); color: var(--ms-blue-text); font-size: 0.72rem; font-weight: 800; }
+.options-group { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+.option-pill { flex: 1; padding: 10px; border: 1px solid var(--ms-border); border-radius: 12px; background: #fff; cursor: pointer; font-weight: 600; }
+.option-pill.active { background: var(--ms-green-dark); color: #fff; border-color: var(--ms-green-dark); }
+.primary-btn, .secondary-btn { padding: 14px 24px; border-radius: 14px; font-weight: 700; cursor: pointer; border: none; }
+.primary-btn { background: linear-gradient(135deg, var(--ms-green-dark), var(--ms-green)); color: #fff; width: 100%; }
+.secondary-btn { background: #fff; border: 1px solid var(--ms-border); flex: 1; }
+.progress-bar-container { height: 8px; background: var(--ms-border); border-radius: 999px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--ms-green-dark), var(--ms-green)); transition: width 0.1s linear; }
+@media (max-width: 1000px) { .support-hero { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-root">
+    <div id="screen-landing">
+        <div class="support-hero">
+            <div class="card hero-main">
+                <span class="page-badge">Balance Flow</span>
+                <h1 style="font-size:2.2rem;font-weight:900;margin:12px 0;">Resonance Breathing</h1>
+                <p style="color:var(--ms-muted);line-height:1.6;">Coherent breathing: 5s inhale → 5s exhale (10s cycle, ~6 breaths/min). Improves autonomic regulation — excellent for daily maintenance.</p>
+                <span class="bpm-pill">~6 breaths per minute</span>
+                <div class="card" style="margin-top:20px;padding:24px;background:#fafbfc;">
+                    <div class="viz-wrap">
+                        <svg width="280" height="280" viewBox="0 0 280 280">
+                            <circle cx="140" cy="140" r="118" fill="none" stroke="var(--ms-border)" stroke-width="3" stroke-dasharray="8 6"/>
+                            <circle class="wave-ring" cx="140" cy="140" r="70" fill="var(--ms-blue-soft)" stroke="var(--ms-blue-text)" stroke-width="2.5" opacity="0.9"/>
+                            <circle cx="140" cy="140" r="38" fill="var(--ms-green-soft)" stroke="var(--ms-green)" stroke-width="2"/>
+                        </svg>
+                        <div class="viz-center">
+                            <div style="font-weight:800;text-transform:uppercase;color:var(--ms-blue-text);">Inhale / Exhale</div>
+                            <div style="font-size:0.75rem;color:var(--ms-muted);">5s · 5s</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:16px;">
+                <div class="card" style="padding:28px;">
+                    <h2 style="font-weight:800;">Session Setup</h2>
+                    <p style="color:var(--ms-muted);font-size:0.85rem;">Fixed 5/5 timing for resonance (HRV-friendly).</p>
+                    <div class="options-group" id="group-cycles" style="margin-top:16px;">
+                        <button type="button" class="option-pill" data-val="6">6 breaths</button>
+                        <button type="button" class="option-pill active" data-val="12">12 breaths</button>
+                        <button type="button" class="option-pill" data-val="18">18 breaths</button>
+                    </div>
+                    <button type="button" id="btn-start" class="primary-btn">Begin Exercise</button>
+                </div>
+                <div class="hero-warning">
+                    <div>🌊</div>
+                    <p style="margin:0;font-size:0.82rem;color:var(--ms-amber-text);">Tracks <strong>consistency streaks</strong>. Ideal long-term habit breathing.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-activity" class="hidden">
+        <div class="manodarpan-card" style="max-width:560px;margin:16px auto;padding:36px;text-align:center;">
+            <span class="page-badge">COHERENT · 6 BPM</span>
+            <div class="viz-wrap" style="margin:20px auto;">
+                <svg width="280" height="280" viewBox="0 0 280 280">
+                    <circle cx="140" cy="140" r="118" fill="none" stroke="rgba(15,23,42,0.05)" stroke-width="3"/>
+                    <circle id="ring-outer" cx="140" cy="140" r="88" fill="none" stroke="var(--ms-blue-text)" stroke-width="2" opacity="0.35"/>
+                    <circle id="ring-main" cx="140" cy="140" r="72" fill="var(--ms-blue-soft)" stroke="var(--ms-blue-text)" stroke-width="3" style="transform-origin:center;"/>
+                </svg>
+                <div class="viz-center">
+                    <div id="lbl-phase" style="font-weight:800;text-transform:uppercase;color:var(--ms-blue-text);">Inhale</div>
+                    <div id="lbl-timer" style="font-size:3.2rem;font-weight:900;">5</div>
+                </div>
+            </div>
+            <div style="max-width:380px;margin:0 auto 20px;">
+                <div style="display:flex;justify-content:space-between;font-weight:700;font-size:0.88rem;margin-bottom:8px;">
+                    <span id="lbl-breath">Breath 1 of 12</span><span id="lbl-elapsed">00:00</span>
+                </div>
+                <div class="progress-bar-container"><div id="progress-fill" class="progress-fill" style="width:0%;"></div></div>
+            </div>
+            <div style="display:flex;gap:12px;max-width:380px;margin:0 auto;">
+                <button type="button" id="btn-pause" class="secondary-btn"><span id="txt-pause">Pause</span></button>
+                <button type="button" id="btn-finish" class="secondary-btn">Finish</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-completion" class="hidden">
+        <div class="card" style="max-width:520px;margin:24px auto;padding:40px;text-align:center;">
+            <h2 style="color:var(--ms-green-dark);font-weight:900;">Balance Restored</h2>
+            <p style="color:var(--ms-muted);">Resonance session logged. <span id="stat-info">—</span></p>
+            <button type="button" id="btn-restart" class="primary-btn" style="margin-top:16px;width:100%;">Again</button>
+            <button type="button" id="btn-home" class="secondary-btn" style="margin-top:8px;width:100%;">Setup</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const SEC = 5;
+    let totalBreaths = 12;
+    let phase = 0, breath = 1, running = false, paused = false;
+    let phaseStart = 0, sessionStart = 0, pauseTotal = 0, pauseAt = 0, tick = null;
+
+    function $(id) { return document.getElementById(id); }
+    document.getElementById("group-cycles").addEventListener("click", e => {
+        const b = e.target.closest(".option-pill");
+        if (!b) return;
+        document.querySelectorAll("#group-cycles .option-pill").forEach(x => x.classList.remove("active"));
+        b.classList.add("active");
+        totalBreaths = +b.dataset.val;
+    });
+
+    function show(s) {
+        ["screen-landing", "screen-activity", "screen-completion"].forEach(id => $(id).classList.toggle("hidden", id !== s));
+    }
+
+    function anim() {
+        if (!running || paused) return;
+        const ratio = Math.min(1, (Date.now() - phaseStart) / 1000 / SEC);
+        const scale = phase === 0 ? 0.82 + ratio * 0.4 : 1.22 - ratio * 0.4;
+        $("ring-main").style.transform = "scale(" + scale + ")";
+        requestAnimationFrame(anim);
+    }
+
+    function tickFn() {
+        if (!running || paused) return;
+        const elapsed = (Date.now() - phaseStart) / 1000;
+        $("lbl-timer").textContent = Math.max(0, Math.ceil(SEC - elapsed));
+        $("lbl-phase").textContent = phase === 0 ? "Inhale" : "Exhale";
+        const totalSec = totalBreaths * 10;
+        const doneSec = (breath - 1) * 10 + (phase === 0 ? elapsed : SEC + elapsed);
+        $("progress-fill").style.width = Math.min(100, doneSec / totalSec * 100) + "%";
+        $("lbl-breath").textContent = "Breath " + breath + " of " + totalBreaths;
+        const sec = Math.floor((Date.now() - sessionStart - pauseTotal) / 1000);
+        $("lbl-elapsed").textContent = String(Math.floor(sec / 60)).padStart(2, "0") + ":" + String(sec % 60).padStart(2, "0");
+        if (elapsed >= SEC) {
+            phase = 1 - phase;
+            if (phase === 0) {
+                breath++;
+                if (breath > totalBreaths) { end(); return; }
+            }
+            phaseStart = Date.now();
+        }
+    }
+
+    function start() {
+        show("screen-activity");
+        phase = 0; breath = 1; running = true; paused = false; pauseTotal = 0;
+        sessionStart = phaseStart = Date.now();
+        tick = setInterval(tickFn, 100);
+        anim();
+    }
+
+    function end() {
+        running = false;
+        clearInterval(tick);
+        const ms = Date.now() - sessionStart - pauseTotal;
+        $("stat-info").textContent = (breath - 1) + " breaths · " + Math.floor(ms / 1000) + "s";
+        show("screen-completion");
+    }
+
+    $("btn-start").onclick = start;
+    $("btn-restart").onclick = start;
+    $("btn-home").onclick = () => { running = false; clearInterval(tick); show("screen-landing"); };
+    $("btn-finish").onclick = end;
+    $("btn-pause").onclick = () => {
+        paused = !paused;
+        if (paused) { pauseAt = Date.now(); $("txt-pause").textContent = "Resume"; }
+        else { const d = Date.now() - pauseAt; pauseTotal += d; phaseStart += d; $("txt-pause").textContent = "Pause"; anim(); }
+    };
+})();
+</script>
+{% endblock %}

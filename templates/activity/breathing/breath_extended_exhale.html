@@ -1,0 +1,233 @@
+{% extends "layouts/dashboard_base.html" %}
+{% load static %}
+
+{% block title %}Extended Exhale Breathing | MindSpace{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+  --ms-card: #ffffff; --ms-text: #0f172a; --ms-muted: #64748b; --ms-border: #e2e8f0;
+  --ms-green: #059669; --ms-green-dark: #064e3b; --ms-green-soft: #ecfdf5; --ms-green-border: #a7f3d0;
+  --ms-blue-soft: #eff6ff; --ms-blue-border: #bfdbfe; --ms-blue-text: #1d4ed8;
+  --ms-amber-soft: #fffbeb; --ms-amber-border: #fde68a; --ms-amber-text: #92400e;
+  --ms-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 18px rgba(15, 23, 42, 0.05);
+}
+@keyframes msFadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes msSoftScale { from { opacity: 0; transform: scale(0.96); } to { opacity: 1; transform: scale(1); } }
+@keyframes msFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+@keyframes exhalePulse { 0%, 45% { transform: scale(0.75); } 55%, 100% { transform: scale(1.35); } }
+.support-hero { display: grid; grid-template-columns: 1.4fr 0.8fr; gap: 16px; animation: msFadeUp 0.45s ease forwards; }
+.hero-main { padding: 22px; animation: msSoftScale 0.45s ease forwards; }
+.hero-warning { padding: 18px; display: flex; gap: 12px; background: var(--ms-amber-soft); border: 1px solid var(--ms-amber-border); border-radius: 18px; }
+.page-badge { display: inline-flex; padding: 5px 12px; border-radius: 999px; background: var(--ms-green-soft); color: var(--ms-green-dark); border: 1px solid #a7f3d0; font-size: 0.72rem; font-weight: 900; text-transform: uppercase; }
+.manodarpan-card { background: var(--ms-green-soft); border: 1px solid #a7f3d0; border-radius: 22px; box-shadow: 0 12px 30px rgba(15, 23, 42, 0.07); position: relative; overflow: hidden; }
+.dashboard-root { max-width: 1100px; margin: 0 auto; padding: 16px; color: var(--ms-text); font-family: Inter, system-ui, sans-serif; }
+.card { background: var(--ms-card); border: 1px solid var(--ms-border); border-radius: 18px; box-shadow: var(--ms-shadow); }
+.hidden { display: none !important; }
+.ms-animate { animation: msFadeUp 0.4s ease forwards; }
+.viz-wrap { position: relative; width: 280px; height: 280px; margin: 0 auto; }
+.breath-ring { transform-origin: center; transition: transform 0.15s linear; }
+.preview-ring { animation: exhalePulse 10s ease-in-out infinite; transform-origin: center; }
+.phase-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 14px; }
+.phase-chip { text-align: center; padding: 10px; border-radius: 12px; border: 1px solid var(--ms-border); font-size: 0.78rem; font-weight: 700; }
+.phase-chip.active { background: var(--ms-green-soft); border-color: var(--ms-green-border); color: var(--ms-green-dark); }
+.settings-title { font-size: 0.95rem; font-weight: 700; margin: 0 0 10px; }
+.options-group { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.option-pill { flex: 1; min-width: 70px; padding: 10px 14px; border: 1px solid var(--ms-border); border-radius: 12px; background: #fff; color: var(--ms-muted); font-weight: 600; font-size: 0.85rem; cursor: pointer; text-align: center; }
+.option-pill.active { background: var(--ms-green-dark); border-color: var(--ms-green-dark); color: #fff; }
+.progress-bar-container { height: 8px; background: var(--ms-border); border-radius: 999px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, var(--ms-green-dark), var(--ms-green)); transition: width 0.1s linear; }
+.primary-btn { background: linear-gradient(135deg, var(--ms-green-dark), var(--ms-green)); color: #fff; border: none; padding: 14px 28px; font-weight: 700; border-radius: 14px; cursor: pointer; width: 100%; }
+.secondary-btn { background: #fff; border: 1px solid var(--ms-border); padding: 12px 24px; font-weight: 700; border-radius: 14px; cursor: pointer; flex: 1; }
+.viz-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+@media (max-width: 1000px) { .support-hero { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-root ms-animate">
+    <div id="screen-landing">
+        <div class="support-hero">
+            <div class="card hero-main" style="min-height:500px;display:flex;flex-direction:column;justify-content:space-between;">
+                <div>
+                    <span class="page-badge">Calm Down</span>
+                    <h1 style="font-size:2.2rem;font-weight:900;margin:12px 0;">Extended Exhale Breathing</h1>
+                    <p style="color:var(--ms-muted);line-height:1.6;">4s inhale → 6s or 8s exhale. Activates the parasympathetic response — one of the strongest immediate calming protocols.</p>
+                    <p style="color:var(--ms-muted);font-size:0.85rem;"><strong>Best for:</strong> anxiety, panic escalation, emotional overwhelm</p>
+                </div>
+                <div class="card" style="padding:24px;background:#fafbfc;">
+                    <div class="viz-wrap">
+                        <svg width="280" height="280" viewBox="0 0 280 280">
+                            <circle cx="140" cy="140" r="110" fill="none" stroke="var(--ms-border)" stroke-width="4"/>
+                            <circle class="preview-ring" cx="140" cy="140" r="72" fill="var(--ms-green-soft)" stroke="var(--ms-green)" stroke-width="3"/>
+                        </svg>
+                        <div class="viz-center">
+                            <div id="preview-label" style="font-weight:800;text-transform:uppercase;color:var(--ms-green-dark);">Inhale</div>
+                            <div id="preview-time" style="font-size:0.75rem;color:var(--ms-muted);">4s in · 6s out</div>
+                        </div>
+                    </div>
+                    <div class="phase-row">
+                        <div class="phase-chip active" data-p="0">Inhale · 4s</div>
+                        <div class="phase-chip" data-p="1">Exhale · 6s+</div>
+                    </div>
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:16px;">
+                <div class="card" style="padding:28px;">
+                    <h2 style="font-weight:800;margin:0 0 20px;">Session Setup</h2>
+                    <div class="settings-title">Exhale Length</div>
+                    <div class="options-group" id="group-exhale">
+                        <button type="button" class="option-pill active" data-val="6">6s Exhale</button>
+                        <button type="button" class="option-pill" data-val="8">8s Exhale</button>
+                    </div>
+                    <div class="settings-title">Cycles</div>
+                    <div class="options-group" id="group-cycles">
+                        <button type="button" class="option-pill" data-val="4">4</button>
+                        <button type="button" class="option-pill active" data-val="6">6</button>
+                        <button type="button" class="option-pill" data-val="10">10</button>
+                    </div>
+                    <button type="button" id="btn-start" class="primary-btn">Begin Exercise</button>
+                </div>
+                <div class="hero-warning">
+                    <div>💙</div>
+                    <p style="margin:0;font-size:0.82rem;color:var(--ms-amber-text);">Tracks <strong>breath pacing consistency</strong>. Let the longer exhale do the calming work.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-activity" class="hidden">
+        <div class="manodarpan-card" style="max-width:560px;margin:16px auto;padding:36px;text-align:center;">
+            <span class="page-badge" id="lbl-status">ACTIVE</span>
+            <div class="viz-wrap" style="margin:20px auto;">
+                <svg width="280" height="280" viewBox="0 0 280 280">
+                    <circle cx="140" cy="140" r="115" fill="none" stroke="rgba(15,23,42,0.06)" stroke-width="5"/>
+                    <circle id="session-ring" class="breath-ring" cx="140" cy="140" r="78" fill="var(--ms-green-soft)" stroke="var(--ms-green)" stroke-width="3"/>
+                </svg>
+                <div class="viz-center">
+                    <div id="lbl-phase" style="font-size:1.2rem;font-weight:800;text-transform:uppercase;color:var(--ms-green-dark);">Inhale</div>
+                    <div id="lbl-timer" style="font-size:3.2rem;font-weight:900;">4</div>
+                </div>
+            </div>
+            <div style="max-width:380px;margin:0 auto 20px;">
+                <div style="display:flex;justify-content:space-between;font-weight:700;font-size:0.88rem;margin-bottom:8px;">
+                    <span id="lbl-cycle">Cycle 1</span><span id="lbl-elapsed">00:00</span>
+                </div>
+                <div class="progress-bar-container"><div id="progress-fill" class="progress-fill" style="width:0%;"></div></div>
+            </div>
+            <div style="display:flex;gap:12px;max-width:380px;margin:0 auto;">
+                <button type="button" id="btn-pause" class="secondary-btn"><span id="txt-pause">Pause</span></button>
+                <button type="button" id="btn-finish" class="secondary-btn" style="color:#991b1b;background:#fef2f2;border-color:#fecaca;">Finish</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-completion" class="hidden">
+        <div class="card" style="max-width:520px;margin:24px auto;padding:40px;text-align:center;background:linear-gradient(145deg,#fff,var(--ms-blue-soft));">
+            <h2 style="color:var(--ms-green-dark);font-weight:900;">Calm Restored</h2>
+            <p style="color:var(--ms-muted);">Extended exhale session complete. Parasympathetic activation recorded.</p>
+            <p><strong id="stat-duration">—</strong> · <strong id="stat-cycles">—</strong></p>
+            <button type="button" id="btn-restart" class="primary-btn" style="margin:16px 0 8px;">Again</button>
+            <button type="button" id="btn-home" class="secondary-btn" style="width:100%;">Setup</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const INHALE = 4;
+    let exhaleSec = 6, totalCycles = 6;
+    let phase = 0, cycle = 1, running = false, paused = false;
+    let phaseStart = 0, sessionStart = 0, pauseTotal = 0, pauseAt = 0, tick = null;
+
+    function phases() { return [{ n: "Inhale", s: INHALE }, { n: "Exhale", s: exhaleSec }]; }
+    function $(id) { return document.getElementById(id); }
+
+    function setupGroup(id, cb) {
+        $(id).addEventListener("click", e => {
+            const b = e.target.closest(".option-pill");
+            if (!b) return;
+            $(id).querySelectorAll(".option-pill").forEach(x => x.classList.remove("active"));
+            b.classList.add("active");
+            cb(+b.dataset.val);
+        });
+    }
+    setupGroup("group-exhale", v => { exhaleSec = v; $("preview-time").textContent = "4s in · " + v + "s out"; document.querySelectorAll(".phase-chip")[1].textContent = "Exhale · " + v + "s"; });
+    setupGroup("group-cycles", v => { totalCycles = v; });
+
+    let pi = 0;
+    function runPreview() {
+        document.querySelectorAll(".phase-chip").forEach((el, i) => el.classList.toggle("active", i === pi));
+        $("preview-label").textContent = pi === 0 ? "Inhale" : "Exhale";
+        const wait = pi === 0 ? INHALE : exhaleSec;
+        pi = 1 - pi;
+        setTimeout(runPreview, wait * 1000);
+    }
+    runPreview();
+
+    function show(s) {
+        ["screen-landing", "screen-activity", "screen-completion"].forEach(id => $(id).classList.toggle("hidden", id !== s));
+    }
+
+    function scaleForPhase(p, ratio) {
+        if (p === 0) return 0.72 + ratio * 0.58;
+        return 1.3 - ratio * 0.55;
+    }
+
+    function renderRing() {
+        if (!running || paused) return;
+        const ph = phases()[phase];
+        const ratio = Math.min(1, (Date.now() - phaseStart) / 1000 / ph.s);
+        $("session-ring").style.transform = "scale(" + scaleForPhase(phase, ratio) + ")";
+        requestAnimationFrame(renderRing);
+    }
+
+    function tickFn() {
+        if (!running || paused) return;
+        const ph = phases()[phase];
+        const elapsed = (Date.now() - phaseStart) / 1000;
+        $("lbl-timer").textContent = Math.max(0, Math.ceil(ph.s - elapsed));
+        $("lbl-phase").textContent = ph.n;
+        const cycleLen = INHALE + exhaleSec;
+        const done = (cycle - 1) * cycleLen + (phase === 0 ? elapsed : INHALE + elapsed);
+        $("progress-fill").style.width = Math.min(100, done / (totalCycles * cycleLen) * 100) + "%";
+        $("lbl-cycle").textContent = "Cycle " + cycle + " of " + totalCycles;
+        const sec = Math.floor((Date.now() - sessionStart - pauseTotal) / 1000);
+        $("lbl-elapsed").textContent = String(Math.floor(sec / 60)).padStart(2, "0") + ":" + String(sec % 60).padStart(2, "0");
+        if (elapsed >= ph.s) {
+            phase++;
+            if (phase >= 2) { phase = 0; cycle++; if (cycle > totalCycles) { end(); return; } }
+            phaseStart = Date.now();
+        }
+    }
+
+    function start() {
+        show("screen-activity");
+        phase = 0; cycle = 1; running = true; paused = false; pauseTotal = 0;
+        sessionStart = phaseStart = Date.now();
+        tick = setInterval(tickFn, 100);
+        renderRing();
+    }
+
+    function end() {
+        running = false;
+        clearInterval(tick);
+        const ms = Date.now() - sessionStart - pauseTotal;
+        $("stat-duration").textContent = Math.floor(ms / 60000) + "m " + String(Math.floor((ms / 1000) % 60)).padStart(2, "0") + "s";
+        $("stat-cycles").textContent = (cycle - 1) + " cycles";
+        show("screen-completion");
+    }
+
+    $("btn-start").onclick = start;
+    $("btn-restart").onclick = start;
+    $("btn-home").onclick = () => { running = false; clearInterval(tick); show("screen-landing"); };
+    $("btn-finish").onclick = end;
+    $("btn-pause").onclick = () => {
+        if (!running) return;
+        paused = !paused;
+        if (paused) { pauseAt = Date.now(); $("txt-pause").textContent = "Resume"; }
+        else { const d = Date.now() - pauseAt; pauseTotal += d; phaseStart += d; $("txt-pause").textContent = "Pause"; renderRing(); }
+    };
+})();
+</script>
+{% endblock %}

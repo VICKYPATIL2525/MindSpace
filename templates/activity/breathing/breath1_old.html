@@ -1,0 +1,1084 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="An interactive Box Breathing visualizer and guide to help you reduce stress, improve focus, and find calm through guided deep breathing.">
+  <title>BreatheCalm - Guided Box Breathing Activity</title>
+  
+  <!-- Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    /* ====================== BASE CSS SYSTEM (From css_example.txt) ====================== */
+    :root {
+      --ms-card: #ffffff;
+      --ms-text: #0f172a;
+      --ms-muted: #64748b;
+      --ms-border: #e2e8f0;
+      --ms-green: #059669;
+      --ms-green-dark: #064e3b;
+      --ms-green-soft: #ecfdf5;
+      --ms-green-border: #a7f3d0;
+      --ms-blue-soft: #eff6ff;
+      --ms-blue-border: #bfdbfe;
+      --ms-blue-text: #1d4ed8;
+      --ms-amber-soft: #fffbeb;
+      --ms-amber-border: #fde68a;
+      --ms-amber-text: #92400e;
+      --ms-red-soft: #fef2f2;
+      --ms-yellow-soft: #fffbeb;
+      --ms-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 18px rgba(15, 23, 42, 0.05);
+    }
+
+    @keyframes msFadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes msSoftScale {
+      from { opacity: 0; transform: scale(0.96); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    @keyframes msFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+    }
+
+    @keyframes msPulseSoft {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(5, 150, 105, 0.22); }
+      50% { box-shadow: 0 0 0 8px rgba(5, 150, 105, 0); }
+    }
+
+    @keyframes msWarningPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.08); }
+    }
+
+    /* Common Utilities & Base Tags */
+    body {
+      background: radial-gradient(circle at 50% 50%, #f8fafc 0%, #f1f5f9 100%);
+      color: var(--ms-text);
+      font-family: 'Outfit', 'Inter', sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .counselor-page {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 24px 22px;
+      box-sizing: border-box;
+      flex: 1;
+      width: 100%;
+    }
+
+    .card {
+      background: var(--ms-card);
+      border: 1px solid var(--ms-border);
+      border-radius: 22px;
+      box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
+      padding: 24px;
+      box-sizing: border-box;
+      transition: all 0.3s ease;
+    }
+
+    .support-hero {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 20px;
+      margin-bottom: 16px;
+      animation: msFadeUp 0.45s ease forwards;
+    }
+
+    .hero-main {
+      padding: 28px;
+      animation: msSoftScale 0.45s ease forwards;
+    }
+
+    .hero-warning {
+      padding: 18px;
+      display: flex;
+      gap: 12px;
+      background: var(--ms-yellow-soft);
+      border: 1px solid var(--ms-amber-border);
+      border-radius: 18px;
+      animation: msFadeUp 0.5s ease forwards;
+      animation-delay: 0.08s;
+      margin-top: 16px;
+    }
+
+    .page-badge, .gov-badge {
+      display: inline-flex;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: var(--ms-green-soft);
+      color: var(--ms-green-dark);
+      border: 1px solid var(--ms-green-border);
+      font-size: 0.72rem;
+      font-weight: 900;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+    }
+
+    .avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: 16px;
+      background: var(--ms-green);
+      color: #ffffff;
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      animation: msPulseSoft 2.4s ease-in-out infinite;
+    }
+
+    .manodarpan-card {
+      background: var(--ms-green-soft);
+      border-color: var(--ms-green-border);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .manodarpan-card::before {
+      content: "";
+      position: absolute;
+      width: 140px;
+      height: 140px;
+      right: -30px;
+      top: -30px;
+      background: rgba(5, 150, 105, 0.08);
+      border-radius: 50%;
+      animation: msFloat 3.8s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    /* Buttons Styling */
+    .primary-btn {
+      background: linear-gradient(135deg, var(--ms-green-dark) 0%, var(--ms-green) 100%);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      font-weight: 700;
+      font-family: 'Outfit', sans-serif;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: all 0.22s ease;
+      box-shadow: 0 8px 20px rgba(5, 150, 105, 0.2);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      border-radius: 14px;
+      text-decoration: none;
+    }
+
+    .primary-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px rgba(5, 150, 105, 0.3);
+      opacity: 0.95;
+    }
+
+    .primary-btn:active {
+      transform: translateY(0);
+    }
+
+    .secondary-btn {
+      background: #ffffff;
+      color: var(--ms-text);
+      border: 1px solid var(--ms-border);
+      padding: 12px 24px;
+      font-weight: 700;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: all 0.22s ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      border-radius: 14px;
+    }
+
+    .secondary-btn:hover {
+      background: #f8fafc;
+      border-color: var(--ms-muted);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 12px rgba(15, 23, 42, 0.04);
+    }
+
+    .secondary-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Media Queries */
+    @media (max-width: 1000px) {
+      .support-hero {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ====================== APPLICATION EXTENSIONS ====================== */
+    .hidden {
+      display: none !important;
+    }
+
+    .screen-view {
+      animation: msFadeUp 0.5s ease forwards;
+    }
+
+    /* Preview Box Breathing Visual (Vector GIF counterpart) */
+    .preview-svg, .visualizer-svg-box {
+      filter: drop-shadow(0 12px 24px rgba(15, 23, 42, 0.08));
+    }
+
+    .preview-active-rect {
+      stroke-dasharray: 960;
+      stroke-dashoffset: 960;
+      animation: drawBoxPreview 16s linear infinite;
+    }
+
+    .preview-glow-dot {
+      animation: moveDotPreview 16s linear infinite;
+    }
+
+    .preview-center-circle {
+      transform-origin: center;
+      animation: scaleCirclePreview 16s ease-in-out infinite;
+    }
+
+    @keyframes drawBoxPreview {
+      0% { stroke-dashoffset: 960; }
+      100% { stroke-dashoffset: 0; }
+    }
+
+    @keyframes moveDotPreview {
+      0%, 100% { cx: 20px; cy: 20px; }
+      25% { cx: 260px; cy: 20px; }
+      50% { cx: 260px; cy: 260px; }
+      75% { cx: 20px; cy: 260px; }
+    }
+
+    @keyframes scaleCirclePreview {
+      0%, 100% { transform: scale(0.85); }
+      25%, 50% { transform: scale(1.30); }
+      55%, 75% { transform: scale(0.85); }
+    }
+
+    /* Interactive Working Page Visualizer */
+    .visualizer-container {
+      position: relative;
+      width: 280px;
+      height: 280px;
+      margin: 32px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .visualizer-circle-element {
+      transform-origin: center;
+      transition: transform 0.1s linear, fill 0.4s ease, stroke 0.4s ease;
+    }
+
+    /* Settings Control UI */
+    .settings-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: var(--ms-text);
+      margin: 0 0 12px 0;
+    }
+
+    .options-group {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .option-pill {
+      flex: 1;
+      min-width: 70px;
+      padding: 10px 14px;
+      border: 1px solid var(--ms-border);
+      border-radius: 12px;
+      background: #ffffff;
+      color: var(--ms-muted);
+      font-weight: 600;
+      font-size: 0.88rem;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.22s ease;
+    }
+
+    .option-pill:hover {
+      border-color: var(--ms-green-border);
+      background: var(--ms-green-soft);
+      color: var(--ms-green-dark);
+    }
+
+    .option-pill.active {
+      background: var(--ms-green-dark);
+      border-color: var(--ms-green-dark);
+      color: #ffffff;
+      box-shadow: 0 4px 10px rgba(6, 78, 59, 0.15);
+    }
+
+    /* Step Active Badges */
+    .step-badge {
+      transition: all 0.4s ease;
+    }
+
+    /* Progress and Stats */
+    .progress-bar-container {
+      height: 8px;
+      background: var(--ms-border);
+      border-radius: 999px;
+      overflow: hidden;
+      width: 100%;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--ms-green-dark), var(--ms-green));
+      transition: width 0.1s linear;
+    }
+
+    /* Earned Badges Layout */
+    .earned-card {
+      background: linear-gradient(145deg, #ffffff, var(--ms-blue-soft));
+      border-color: var(--ms-blue-border);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Premium Header -->
+  <header style="display: flex; justify-content: space-between; align-items: center; padding: 16px 24px; border-bottom: 1px solid var(--ms-border); background: #ffffff; box-shadow: 0 2px 8px rgba(15,23,42,0.015); z-index: 100;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="width: 32px; height: 32px; border-radius: 10px; background: var(--ms-green-soft); border: 1px solid var(--ms-green-border); display: grid; place-items: center;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ms-green)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
+      </div>
+      <span style="font-weight: 800; font-size: 1.25rem; color: var(--ms-green-dark); letter-spacing: -0.5px;">BreatheCalm</span>
+    </div>
+    <div class="streak-pill" style="display: flex; align-items: center; gap: 6px; padding: 6px 14px; background: var(--ms-green-soft); border: 1px solid var(--ms-green-border); color: var(--ms-green-dark); font-weight: 800; font-size: 0.75rem; border-radius: 999px; letter-spacing: 0.5px;">
+      <span>DAILY STREAK: 3 DAYS 🔥</span>
+    </div>
+  </header>
+
+  <main class="counselor-page">
+
+    <!-- ====================== SCREEN 1: LANDING VIEW ====================== -->
+    <div id="screen-landing" class="screen-view">
+      <div class="support-hero">
+        
+        <!-- Left Column: Intro & Vector GIF Representation -->
+        <div class="card hero-main" style="display: flex; flex-direction: column; justify-content: space-between;">
+          <div>
+            <span class="page-badge" style="margin-bottom: 12px;">Mindfulness Practice</span>
+            <h1 style="font-size: 2.3rem; margin: 8px 0 16px; font-weight: 900; color: var(--ms-text); letter-spacing: -0.8px; line-height: 1.1;">
+              Box Breathing Exercise
+            </h1>
+            <p style="color: var(--ms-muted); font-size: 1.05rem; line-height: 1.6; margin: 0 0 20px 0;">
+              Reset your nervous system in minutes. Box Breathing is a structured breathing sequence that helps dissolve cortisol, restores logical thinking, and anchors your focus.
+            </p>
+          </div>
+
+          <!-- Animated Box Breathing Vector Graphic -->
+          <div class="preview-card card" style="display: flex; flex-direction: column; align-items: center; padding: 20px 24px; background: #fafbfc; border-radius: 20px;">
+            <div style="position: relative; width: 280px; height: 280px; display: flex; align-items: center; justify-content: center;">
+              <svg class="preview-svg" width="280" height="280" viewBox="0 0 280 280">
+                <!-- Outer Square Path Track -->
+                <rect x="20" y="20" width="240" height="240" rx="16" fill="none" stroke="var(--ms-border)" stroke-width="5" />
+                <!-- Active Running Stroke -->
+                <path id="preview-path" d="M 20 20 L 260 20 L 260 260 L 20 260 Z" fill="none" stroke="var(--ms-green)" stroke-width="5" stroke-linecap="round" class="preview-active-rect" />
+                <!-- Active Tracking Point -->
+                <circle class="preview-glow-dot" r="8" fill="var(--ms-green)" />
+                <!-- Breathing Guide Circle -->
+                <circle class="preview-center-circle" cx="140" cy="140" r="48" fill="var(--ms-green-soft)" stroke="var(--ms-green)" stroke-width="2" />
+              </svg>
+              <!-- Center Text Status -->
+              <div style="position: absolute; text-align: center; pointer-events: none; width: 110px; z-index: 10;">
+                <div id="preview-phase-text" style="font-size: 1rem; font-weight: 800; color: var(--ms-green-dark); text-transform: uppercase; letter-spacing: 0.5px;">Inhale</div>
+                <div id="preview-phase-desc" style="font-size: 0.72rem; color: var(--ms-muted); margin-top: 3px; font-weight: 500;">4 seconds</div>
+              </div>
+            </div>
+
+            <!-- Dynamic step tags -->
+            <div class="instructions-steps" style="display: grid; grid-template-columns: repeat(4, 1fr); width: 100%; gap: 8px; margin-top: 14px;">
+              <div id="step-preview-0" class="step-badge" style="text-align: center; padding: 10px 4px; border-radius: 12px; border: 1px solid var(--ms-border); font-size: 0.78rem; font-weight: 700;">1. Inhale</div>
+              <div id="step-preview-1" class="step-badge" style="text-align: center; padding: 10px 4px; border-radius: 12px; border: 1px solid var(--ms-border); font-size: 0.78rem; font-weight: 700;">2. Hold</div>
+              <div id="step-preview-2" class="step-badge" style="text-align: center; padding: 10px 4px; border-radius: 12px; border: 1px solid var(--ms-border); font-size: 0.78rem; font-weight: 700;">3. Exhale</div>
+              <div id="step-preview-3" class="step-badge" style="text-align: center; padding: 10px 4px; border-radius: 12px; border: 1px solid var(--ms-border); font-size: 0.78rem; font-weight: 700;">4. Hold</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Settings & Quick Tips -->
+        <div style="display: flex; flex-direction: column; gap: 16px;">
+          
+          <!-- Configuration Card -->
+          <div class="card" style="padding: 28px;">
+            <h2 style="font-size: 1.35rem; font-weight: 800; color: var(--ms-text); margin: 0 0 4px 0; letter-spacing: -0.3px;">Configure Session</h2>
+            <p style="font-size: 0.85rem; color: var(--ms-muted); margin: 0 0 24px 0; font-weight: 500;">Configure breathing parameters to suit your preference.</p>
+
+            <!-- Setting: Phase Duration -->
+            <div class="settings-title">Phase Duration (Tempo)</div>
+            <div class="options-group" id="group-duration">
+              <button class="option-pill" data-val="3">3s (Fast)</button>
+              <button class="option-pill active" data-val="4">4s (Navy SEAL)</button>
+              <button class="option-pill" data-val="5">5s (Medium)</button>
+              <button class="option-pill" data-val="6">6s (Deep)</button>
+            </div>
+
+            <!-- Setting: Cycles -->
+            <div class="settings-title">Session Length</div>
+            <div class="options-group" id="group-cycles">
+              <button class="option-pill" data-val="2">2 Cycles<br><span style="font-size: 0.7rem; font-weight: 500;">(~30s)</span></button>
+              <button class="option-pill active" data-val="4">4 Cycles<br><span style="font-size: 0.7rem; font-weight: 500;">(~1m)</span></button>
+              <button class="option-pill" data-val="8">8 Cycles<br><span style="font-size: 0.7rem; font-weight: 500;">(~2m)</span></button>
+              <button class="option-pill" data-val="12">12 Cycles<br><span style="font-size: 0.7rem; font-weight: 500;">(~3m)</span></button>
+            </div>
+
+            <!-- Setting: Audio Feedback -->
+            <div class="settings-title">Audio Guidance</div>
+            <div class="options-group" id="group-audio">
+              <button class="option-pill active" data-val="synth">Tone Synth</button>
+              <button class="option-pill" data-val="silent">Silent Mode</button>
+            </div>
+
+            <!-- Action Button -->
+            <button id="btn-start" class="primary-btn" style="width: 100%; border: none; padding: 15px; font-size: 1.05rem; cursor: pointer; margin-top: 8px;">
+              <span>Begin Session</span>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="5 3 19 12 5 21 5 3"></polygon>
+              </svg>
+            </button>
+          </div>
+
+          <!-- Scientific Tip Card (Yellow style matching css_example.txt) -->
+          <div class="hero-warning">
+            <div style="font-size: 1.4rem;">💡</div>
+            <div>
+              <h3 style="margin: 0 0 4px 0; font-size: 0.92rem; font-weight: 800; color: var(--ms-amber-text);">PRO TIP FOR FOCUS</h3>
+              <p style="margin: 0; font-size: 0.82rem; line-height: 1.5; color: var(--ms-amber-text); font-weight: 500;">
+                For optimal heart-rate variability response, sit tall, drop your shoulders, and breathe deeply into your belly. Try to focus fully on the drawing dot.
+              </p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+
+    <!-- ====================== SCREEN 2: ACTIVE ACTIVITY VIEW ====================== -->
+    <div id="screen-activity" class="screen-view hidden">
+      <div class="card manodarpan-card" style="max-width: 580px; margin: 16px auto; padding: 36px 32px; display: flex; flex-direction: column; align-items: center; border-radius: 26px;">
+        
+        <span class="page-badge" id="lbl-status-badge" style="margin-bottom: 12px; font-weight: 900;">ACTIVITY ACTIVE</span>
+        
+        <h2 id="lbl-activity-title" style="font-weight: 900; font-size: 1.9rem; color: var(--ms-green-dark); margin: 4px 0 8px; text-align: center; letter-spacing: -0.5px;">
+          Follow the Circle
+        </h2>
+        <p id="lbl-activity-help" style="color: var(--ms-muted); font-size: 0.9rem; text-align: center; margin: 0 0 16px 0; font-weight: 500;">
+          Let your breathing sync with the geometric rhythm.
+        </p>
+
+        <!-- Dynamic Box Visualizer -->
+        <div class="visualizer-container">
+          <svg class="visualizer-svg-box" width="280" height="280" viewBox="0 0 280 280">
+            <!-- Box Track -->
+            <rect x="20" y="20" width="240" height="240" rx="16" fill="none" stroke="rgba(15,23,42,0.06)" stroke-width="6" />
+            <!-- Active Draw path -->
+            <path id="active-path" d="M 20 20 L 260 20 L 260 260 L 20 260 Z" fill="none" stroke="var(--ms-green)" stroke-width="6" stroke-linecap="round" style="stroke-dasharray: 960; stroke-dashoffset: 960;" />
+            <!-- Animated tracking Dot -->
+            <circle id="glow-dot" r="8" fill="var(--ms-green)" cx="20" cy="20" />
+            <!-- Central Scaling Circle Guide -->
+            <circle id="center-circle" cx="140" cy="140" r="50" fill="var(--ms-green-soft)" stroke="var(--ms-green)" stroke-width="2.5" class="visualizer-circle-element" />
+          </svg>
+          
+          <!-- Central Overlay Countdown Texts -->
+          <div style="position: absolute; text-align: center; pointer-events: none; width: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10;">
+            <div id="lbl-phase" style="font-size: 1.3rem; font-weight: 800; color: var(--ms-green-dark); text-transform: uppercase; letter-spacing: 0.5px; line-height: 1;">Inhale</div>
+            <div id="lbl-timer" style="font-size: 3.5rem; font-weight: 900; color: var(--ms-text); margin: 6px 0 4px; line-height: 0.9; font-feature-settings: 'tnum';">4</div>
+            <div id="lbl-next-phase" style="font-size: 0.68rem; color: var(--ms-muted); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Hold Next</div>
+          </div>
+        </div>
+
+        <!-- Cycle & Time Information -->
+        <div style="width: 100%; max-width: 380px; margin: 12px 0 24px 0;">
+          <div style="display: flex; justify-content: space-between; font-size: 0.88rem; font-weight: 700; color: var(--ms-text); margin-bottom: 8px;">
+            <span id="lbl-cycle-indicator">Cycle 1 of 4</span>
+            <span id="lbl-time-elapsed">Elapsed: 00:00</span>
+          </div>
+          <div class="progress-bar-container">
+            <div id="progress-cycle-fill" class="progress-fill" style="width: 0%;"></div>
+          </div>
+        </div>
+
+        <!-- Working Page Controls (Pause & Finish Buttons) -->
+        <div style="display: flex; gap: 14px; width: 100%; max-width: 380px;">
+          <button id="btn-pause-resume" class="secondary-btn" style="flex: 1; padding: 12px; border-radius: 12px; justify-content: center;">
+            <span id="txt-pause">Pause</span>
+          </button>
+          <button id="btn-finish" class="secondary-btn" style="flex: 1; padding: 12px; border-radius: 12px; border-color: #fecaca; background: var(--ms-red-soft); color: #991b1b; justify-content: center;">
+            <span>Finish Activity</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ====================== SCREEN 3: COMPLETION SUMMARY VIEW ====================== -->
+    <div id="screen-completion" class="screen-view hidden">
+      <div class="card earned-card" style="max-width: 540px; margin: 24px auto; padding: 40px 32px; text-align: center; border-radius: 26px; box-shadow: 0 20px 45px rgba(29, 78, 216, 0.07);">
+        
+        <!-- Calming Verification Badge -->
+        <div class="avatar" style="width: 60px; height: 60px; border-radius: 20px; background: var(--ms-green); color: white; display: grid; place-items: center; margin: 0 auto 20px; font-size: 2rem; box-shadow: 0 8px 24px rgba(5,150,105,0.25);">
+          ✓
+        </div>
+
+        <h2 style="font-weight: 900; font-size: 2.1rem; color: var(--ms-green-dark); margin: 0 0 8px 0; letter-spacing: -0.6px;">
+          Mindfulness Achieved
+        </h2>
+        <p style="color: var(--ms-muted); font-size: 0.95rem; line-height: 1.6; margin: 0 auto 28px; max-width: 380px; font-weight: 500;">
+          Congratulations! Your heart rate has calibrated and your nervous system is in a recovered state. Take this calm with you.
+        </p>
+
+        <!-- Session Statistics -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 32px; width: 100%; max-width: 400px; margin-left: auto; margin-right: auto;">
+          <div style="padding: 16px; border: 1px solid var(--ms-border); border-radius: 16px; background: #ffffff; box-shadow: 0 4px 10px rgba(15,23,42,0.015);">
+            <div style="font-size: 0.72rem; color: var(--ms-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Breathing Time</div>
+            <div id="stat-duration" style="font-size: 1.4rem; font-weight: 800; color: var(--ms-text); margin-top: 4px;">1m 06s</div>
+          </div>
+          <div style="padding: 16px; border: 1px solid var(--ms-border); border-radius: 16px; background: #ffffff; box-shadow: 0 4px 10px rgba(15,23,42,0.015);">
+            <div style="font-size: 0.72rem; color: var(--ms-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Completed Cycles</div>
+            <div id="stat-cycles" style="font-size: 1.4rem; font-weight: 800; color: var(--ms-text); margin-top: 4px;">4 Cycles</div>
+          </div>
+          <div style="padding: 16px; border: 1px solid var(--ms-blue-border); border-radius: 16px; background: var(--ms-blue-soft); grid-column: span 2; display: flex; align-items: center; justify-content: center; gap: 8px;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ms-blue-text)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+            </svg>
+            <span style="font-size: 0.88rem; color: var(--ms-blue-text); font-weight: 800;">CALMNESS FACTOR ACHIEVED: 100%</span>
+          </div>
+        </div>
+
+        <!-- Completion Actions -->
+        <div style="display: flex; flex-direction: column; gap: 10px; width: 100%; max-width: 400px; margin: 0 auto;">
+          <button id="btn-restart" class="primary-btn" style="width: 100%; justify-content: center;">
+            <span>Start Another Session</span>
+          </button>
+          <button id="btn-home" class="secondary-btn" style="width: 100%; justify-content: center;">
+            <span>Back to Settings</span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Premium Footer Info -->
+  <footer style="text-align: center; padding: 20px; font-size: 0.8rem; color: var(--ms-muted); font-weight: 600; border-top: 1px solid var(--ms-border); background: #ffffff; width: 100%; box-sizing: border-box;">
+    © 2026 BreatheCalm. Created for Calm Activities. Designed with Premium Clinical Aesthetics.
+  </footer>
+
+  <!-- ====================== WEB APPLICATION SCRIPT ====================== -->
+  <script>
+    // ====================== WEB AUDIO SYNTHESIZER ======================
+    class BreathingAudio {
+      constructor() {
+        this.ctx = null;
+        this.drone = null;
+        this.droneGain = null;
+        this.synth = null;
+        this.synthGain = null;
+        this.filter = null;
+        this.gain = null;
+        this.isPlaying = false;
+        this.muted = false;
+      }
+      
+      init() {
+        if (this.ctx) return;
+        try {
+          this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+          
+          // Main volume node
+          this.gain = this.ctx.createGain();
+          this.gain.gain.setValueAtTime(0.0, this.ctx.currentTime);
+          this.gain.connect(this.ctx.destination);
+          
+          // Lowpass Filter for warm, resonant chord tones
+          this.filter = this.ctx.createBiquadFilter();
+          this.filter.type = 'lowpass';
+          this.filter.frequency.setValueAtTime(260, this.ctx.currentTime);
+          this.filter.connect(this.gain);
+          
+          // Low Calm Drone Oscillator
+          this.drone = this.ctx.createOscillator();
+          this.drone.type = 'triangle';
+          this.drone.frequency.setValueAtTime(110, this.ctx.currentTime); // A2 (Soft grounding bass)
+          
+          this.droneGain = this.ctx.createGain();
+          this.droneGain.gain.setValueAtTime(0.03, this.ctx.currentTime);
+          
+          this.drone.connect(this.droneGain);
+          this.droneGain.connect(this.filter);
+          this.drone.start();
+          
+          // Resonant melodic sine wave for guide
+          this.synth = this.ctx.createOscillator();
+          this.synth.type = 'sine';
+          this.synth.frequency.setValueAtTime(220, this.ctx.currentTime); // A3
+          
+          this.synthGain = this.ctx.createGain();
+          this.synthGain.gain.setValueAtTime(0.0, this.ctx.currentTime);
+          
+          this.synth.connect(this.synthGain);
+          this.synthGain.connect(this.filter);
+          this.synth.start();
+        } catch(e) {
+          console.warn("Web Audio API not supported or blocked: ", e);
+        }
+      }
+      
+      start() {
+        this.init();
+        if (!this.ctx) return;
+        
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+        this.isPlaying = true;
+        
+        const targetVol = this.muted ? 0.0 : 0.8;
+        this.gain.gain.linearRampToValueAtTime(targetVol, this.ctx.currentTime + 1.0);
+      }
+      
+      playPhase(phase, duration) {
+        if (!this.isPlaying || !this.ctx || this.muted) return;
+        const now = this.ctx.currentTime;
+        
+        this.synth.frequency.cancelScheduledValues(now);
+        this.synthGain.gain.cancelScheduledValues(now);
+        
+        if (phase === 0) { // Inhale: Rising A3 -> E4 (220Hz -> 330Hz)
+          this.synth.frequency.setValueAtTime(220, now);
+          this.synth.frequency.linearRampToValueAtTime(330, now + duration);
+          this.synthGain.gain.setValueAtTime(0.01, now);
+          this.synthGain.gain.linearRampToValueAtTime(0.12, now + duration);
+        } 
+        else if (phase === 1) { // Hold: Stable calm E4 (330Hz)
+          this.synth.frequency.setValueAtTime(330, now);
+          this.synthGain.gain.setValueAtTime(0.12, now);
+          this.synthGain.gain.linearRampToValueAtTime(0.06, now + duration); // Soft fade
+        } 
+        else if (phase === 2) { // Exhale: Falling E4 -> A3 (330Hz -> 220Hz)
+          this.synth.frequency.setValueAtTime(330, now);
+          this.synth.frequency.linearRampToValueAtTime(220, now + duration);
+          this.synthGain.gain.setValueAtTime(0.06, now);
+          this.synthGain.gain.linearRampToValueAtTime(0.01, now + duration);
+        } 
+        else if (phase === 3) { // Hold Empty: Low hum fade
+          this.synthGain.gain.setValueAtTime(0.01, now);
+          this.synthGain.gain.linearRampToValueAtTime(0.0, now + 0.8);
+        }
+      }
+      
+      pause() {
+        if (!this.ctx || !this.isPlaying) return;
+        this.gain.gain.linearRampToValueAtTime(0.0, this.ctx.currentTime + 0.3);
+      }
+      
+      resume() {
+        if (!this.ctx || !this.isPlaying) return;
+        const targetVol = this.muted ? 0.0 : 0.8;
+        this.gain.gain.linearRampToValueAtTime(targetVol, this.ctx.currentTime + 0.3);
+      }
+      
+      setMuted(muted) {
+        this.muted = muted;
+        if (this.gain && this.ctx) {
+          const targetVol = muted ? 0.0 : 0.8;
+          this.gain.gain.linearRampToValueAtTime(targetVol, this.ctx.currentTime + 0.15);
+        }
+      }
+      
+      stop() {
+        this.isPlaying = false;
+        this.pause();
+      }
+    }
+
+    // Initialize Audio
+    const audioSynth = new BreathingAudio();
+
+    // ====================== DYNAMIC PREVIEW SCRIPT (Landing GIF Counterpart) ======================
+    let previewIndex = 0;
+    const previewTitles = ["Inhale", "Hold", "Exhale", "Hold"];
+    const previewDescs = ["Fill your lungs", "Keep air in", "Release breath", "Keep lungs empty"];
+    const previewStepBadges = [
+      document.getElementById('step-preview-0'),
+      document.getElementById('step-preview-1'),
+      document.getElementById('step-preview-2'),
+      document.getElementById('step-preview-3')
+    ];
+
+    function updatePreviewText() {
+      // Update Center Text
+      document.getElementById('preview-phase-text').textContent = previewTitles[previewIndex];
+      document.getElementById('preview-phase-desc').textContent = previewDescs[previewIndex];
+
+      // Update Step badging styles
+      previewStepBadges.forEach((badge, idx) => {
+        if (idx === previewIndex) {
+          badge.style.background = 'var(--ms-green-soft)';
+          badge.style.borderColor = 'var(--ms-green-border)';
+          badge.style.color = 'var(--ms-green-dark)';
+          badge.style.transform = 'scale(1.03)';
+        } else {
+          badge.style.background = '#ffffff';
+          badge.style.borderColor = 'var(--ms-border)';
+          badge.style.color = 'var(--ms-muted)';
+          badge.style.transform = 'scale(1.0)';
+        }
+      });
+
+      // Increment
+      previewIndex = (previewIndex + 1) % 4;
+    }
+
+    // Run preview steps initially and loop every 4s
+    updatePreviewText();
+    const previewInterval = setInterval(updatePreviewText, 4000);
+
+    // ====================== ACTIVE WORKING EXERCISE ENGINE ======================
+    
+    // Config states
+    let phaseDuration = 4; // seconds
+    let totalCycles = 4;
+    let audioMode = 'synth'; // 'synth' or 'silent'
+
+    // Running states
+    let activePhase = 0; // 0: Inhale, 1: Hold (full), 2: Exhale, 3: Hold (empty)
+    let activeCycle = 1;
+    let isRunning = false;
+    let isPaused = false;
+
+    // Time calculations
+    let phaseStartTime = 0;
+    let elapsedInPhase = 0;
+    let sessionStartTime = 0;
+    let totalPauseDuration = 0;
+    let pauseStartTime = 0;
+
+    // Timer Handles
+    let frameRequestHandle = null;
+    let clockIntervalHandle = null;
+
+    // Constants
+    const totalPerimeter = 960; // 240px x 4 sides of the active SVG square
+
+    // Phase Label texts
+    const phaseNames = ["Inhale", "Hold", "Exhale", "Hold"];
+    const phaseNextNames = ["Hold Next", "Exhale Next", "Hold Next", "Inhale Next"];
+    const phaseColors = [
+      "var(--ms-green)", // Inhale
+      "var(--ms-blue-text)", // Hold Full
+      "var(--ms-green-dark)", // Exhale
+      "var(--ms-amber-text)"  // Hold Empty
+    ];
+    const phaseBgColors = [
+      "var(--ms-green-soft)",
+      "var(--ms-blue-soft)",
+      "rgba(6, 95, 70, 0.06)",
+      "var(--ms-amber-soft)"
+    ];
+
+    // Select settings pills behavior
+    function setupSettingGroup(containerId, callback) {
+      const container = document.getElementById(containerId);
+      container.addEventListener('click', (e) => {
+        const btn = e.target.closest('.option-pill');
+        if (!btn) return;
+        container.querySelectorAll('.option-pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        callback(btn.dataset.val);
+      });
+    }
+
+    setupSettingGroup('group-duration', (val) => {
+      phaseDuration = parseInt(val, 10);
+    });
+
+    setupSettingGroup('group-cycles', (val) => {
+      totalCycles = parseInt(val, 10);
+    });
+
+    setupSettingGroup('group-audio', (val) => {
+      audioMode = val;
+    });
+
+    // Start Session Action
+    document.getElementById('btn-start').addEventListener('click', startBreathingSession);
+    document.getElementById('btn-pause-resume').addEventListener('click', togglePauseSession);
+    document.getElementById('btn-finish').addEventListener('click', finishBreathingSession);
+    document.getElementById('btn-restart').addEventListener('click', restartSession);
+    document.getElementById('btn-home').addEventListener('click', returnToSettings);
+
+    function startBreathingSession() {
+      // 1. Audio check & trigger
+      if (audioMode === 'synth') {
+        audioSynth.setMuted(false);
+        audioSynth.start();
+      } else {
+        audioSynth.setMuted(true);
+        audioSynth.start();
+      }
+
+      // 2. Hide Landing, Show Activity Screen
+      document.getElementById('screen-landing').classList.add('hidden');
+      document.getElementById('screen-activity').classList.remove('hidden');
+
+      // 3. Reset Engine States
+      activePhase = 0;
+      activeCycle = 1;
+      isRunning = true;
+      isPaused = false;
+      elapsedInPhase = 0;
+      totalPauseDuration = 0;
+      pauseStartTime = 0;
+      sessionStartTime = Date.now();
+      phaseStartTime = Date.now();
+
+      // Reset Pause buttons UI
+      document.getElementById('txt-pause').textContent = "Pause";
+      document.getElementById('lbl-status-badge').textContent = "ACTIVITY ACTIVE";
+      document.getElementById('lbl-status-badge').style.background = "var(--ms-green-soft)";
+      document.getElementById('lbl-status-badge').style.color = "var(--ms-green-dark)";
+      document.getElementById('lbl-status-badge').style.borderColor = "var(--ms-green-border)";
+
+      // Initial Label states
+      updateLabels();
+      audioSynth.playPhase(activePhase, phaseDuration);
+
+      // 4. Start Render Frame Loop & Clock Loop
+      frameRequestHandle = requestAnimationFrame(renderFrame);
+      clockIntervalHandle = setInterval(tickClock, 100);
+    }
+
+    function togglePauseSession() {
+      if (!isRunning) return;
+
+      if (!isPaused) {
+        // Paused state
+        isPaused = true;
+        pauseStartTime = Date.now();
+        audioSynth.pause();
+        
+        document.getElementById('txt-pause').textContent = "Resume";
+        document.getElementById('lbl-status-badge').textContent = "ACTIVITY PAUSED";
+        document.getElementById('lbl-status-badge').style.background = "var(--ms-amber-soft)";
+        document.getElementById('lbl-status-badge').style.color = "var(--ms-amber-text)";
+        document.getElementById('lbl-status-badge').style.borderColor = "var(--ms-amber-border)";
+      } else {
+        // Resumed state
+        isPaused = false;
+        const currentPause = Date.now() - pauseStartTime;
+        totalPauseDuration += currentPause;
+        phaseStartTime += currentPause; // Slide phase start time forward by the pause duration
+        
+        audioSynth.resume();
+        audioSynth.playPhase(activePhase, phaseDuration - elapsedInPhase);
+
+        document.getElementById('txt-pause').textContent = "Pause";
+        document.getElementById('lbl-status-badge').textContent = "ACTIVITY ACTIVE";
+        document.getElementById('lbl-status-badge').style.background = "var(--ms-green-soft)";
+        document.getElementById('lbl-status-badge').style.color = "var(--ms-green-dark)";
+        document.getElementById('lbl-status-badge').style.borderColor = "var(--ms-green-border)";
+
+        // Restart RAF loop if it stopped
+        frameRequestHandle = requestAnimationFrame(renderFrame);
+      }
+    }
+
+    function finishBreathingSession() {
+      stopEngine();
+      audioSynth.stop();
+
+      // Show stats on completion screen
+      const elapsedTotalMs = Date.now() - sessionStartTime - totalPauseDuration;
+      const elapsedSeconds = Math.floor(elapsedTotalMs / 1000);
+      const minutes = Math.floor(elapsedSeconds / 60);
+      const seconds = elapsedSeconds % 60;
+      
+      document.getElementById('stat-duration').textContent = `${minutes}m ${seconds.toString().padStart(2, '0')}s`;
+      
+      // Calculate how many cycles were completed (either fully or partially)
+      // Cycle completed count: we can show current complete cycles
+      const completedCycles = activeCycle - 1;
+      document.getElementById('stat-cycles').textContent = `${completedCycles} of ${totalCycles} Cycles`;
+
+      // Navigate
+      document.getElementById('screen-activity').classList.add('hidden');
+      document.getElementById('screen-completion').classList.remove('hidden');
+    }
+
+    function restartSession() {
+      document.getElementById('screen-completion').classList.add('hidden');
+      startBreathingSession();
+    }
+
+    function returnToSettings() {
+      document.getElementById('screen-completion').classList.add('hidden');
+      document.getElementById('screen-landing').classList.remove('hidden');
+    }
+
+    function stopEngine() {
+      isRunning = false;
+      if (frameRequestHandle) {
+        cancelAnimationFrame(frameRequestHandle);
+        frameRequestHandle = null;
+      }
+      if (clockIntervalHandle) {
+        clearInterval(clockIntervalHandle);
+        clockIntervalHandle = null;
+      }
+    }
+
+    // Main Clock tick (Runs every 100ms for high responsiveness)
+    function tickClock() {
+      if (!isRunning || isPaused) return;
+
+      const now = Date.now();
+      elapsedInPhase = (now - phaseStartTime) / 1000;
+
+      // Handle countdown timer digits
+      const timeRemaining = Math.max(0, Math.ceil(phaseDuration - elapsedInPhase));
+      document.getElementById('lbl-timer').textContent = timeRemaining;
+
+      // Check if phase complete
+      if (elapsedInPhase >= phaseDuration) {
+        elapsedInPhase = 0;
+        phaseStartTime = Date.now();
+        activePhase = (activePhase + 1) % 4;
+
+        if (activePhase === 0) {
+          activeCycle += 1;
+          if (activeCycle > totalCycles) {
+            finishBreathingSession();
+            return;
+          }
+        }
+
+        updateLabels();
+        audioSynth.playPhase(activePhase, phaseDuration);
+      }
+
+      // Update cycle progress bar & text
+      const totalPhases = totalCycles * 4;
+      const completedPhasesCount = (activeCycle - 1) * 4 + activePhase;
+      const progressPercent = ((completedPhasesCount + (elapsedInPhase / phaseDuration)) / totalPhases) * 100;
+      
+      document.getElementById('progress-cycle-fill').style.width = `${Math.min(100, progressPercent)}%`;
+      document.getElementById('lbl-cycle-indicator').textContent = `Cycle ${Math.min(totalCycles, activeCycle)} of ${totalCycles}`;
+
+      // Update total elapsed timer
+      const elapsedTotalMs = Date.now() - sessionStartTime - totalPauseDuration;
+      const elapsedSec = Math.floor(elapsedTotalMs / 1000);
+      const minutes = Math.floor(elapsedSec / 60);
+      const seconds = elapsedSec % 60;
+      document.getElementById('lbl-time-elapsed').textContent = `Elapsed: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    // Dynamic Frame Rendering for Smooth SVG Draw and Scale
+    function renderFrame() {
+      if (!isRunning || isPaused) return;
+
+      const now = Date.now();
+      const frameElapsed = (now - phaseStartTime) / 1000;
+      const ratio = Math.min(1.0, frameElapsed / phaseDuration);
+
+      // 1. Calculate Active Draw Path Offset (960 units total length)
+      const currentProgress = (activePhase * 240) + (ratio * 240);
+      document.getElementById('active-path').style.strokeDashoffset = totalPerimeter - currentProgress;
+
+      // 2. Position Glowing Dot Coordinates along square coordinates
+      // Square vertices: (20,20) -> (260,20) -> (260,260) -> (20,260) -> (20,20)
+      let cx = 20, cy = 20;
+      if (activePhase === 0) { // Top side (Left -> Right)
+        cx = 20 + ratio * 240;
+        cy = 20;
+      } else if (activePhase === 1) { // Right side (Top -> Bottom)
+        cx = 260;
+        cy = 20 + ratio * 240;
+      } else if (activePhase === 2) { // Bottom side (Right -> Left)
+        cx = 260 - ratio * 240;
+        cy = 260;
+      } else if (activePhase === 3) { // Left side (Bottom -> Top)
+        cx = 20;
+        cy = 260 - ratio * 240;
+      }
+
+      const dot = document.getElementById('glow-dot');
+      dot.setAttribute('cx', cx);
+      dot.setAttribute('cy', cy);
+
+      // 3. Central scale manipulation
+      // Phase 0: grow (scale 0.85 -> 1.30)
+      // Phase 1: hold (scale 1.30)
+      // Phase 2: shrink (scale 1.30 -> 0.85)
+      // Phase 3: hold (scale 0.85)
+      let scale = 0.85;
+      if (activePhase === 0) {
+        scale = 0.85 + (ratio * 0.45);
+      } else if (activePhase === 1) {
+        scale = 1.30;
+      } else if (activePhase === 2) {
+        scale = 1.30 - (ratio * 0.45);
+      } else if (activePhase === 3) {
+        scale = 0.85;
+      }
+
+      document.getElementById('center-circle').style.transform = `scale(${scale})`;
+
+      frameRequestHandle = requestAnimationFrame(renderFrame);
+    }
+
+    function updateLabels() {
+      // Set active status phase name
+      document.getElementById('lbl-phase').textContent = phaseNames[activePhase];
+      document.getElementById('lbl-next-phase').textContent = phaseNextNames[activePhase];
+
+      // Update colors matching the phase context
+      const color = phaseColors[activePhase];
+      const bgColor = phaseBgColors[activePhase];
+      
+      document.getElementById('lbl-phase').style.color = color;
+      document.getElementById('center-circle').setAttribute('stroke', color);
+      document.getElementById('center-circle').setAttribute('fill', bgColor);
+      document.getElementById('active-path').setAttribute('stroke', color);
+      document.getElementById('glow-dot').setAttribute('fill', color);
+
+      // Help descriptor
+      const helps = [
+        "Inhale slowly through your nose.",
+        "Hold your breath with filled lungs.",
+        "Exhale slowly and smoothly.",
+        "Hold your breath with empty lungs."
+      ];
+      document.getElementById('lbl-activity-help').textContent = helps[activePhase];
+    }
+  </script>
+</body>
+</html>

@@ -1064,17 +1064,17 @@
                 <div class="simple-row">
                     <div class="simple-stat">
                         <small>Today</small>
-                        <strong>{{ activities_completed|default:2 }}/{{ activities_total|default:3 }}</strong>
+                        <strong>{{ activities_completed|default:0 }}/{{ activities_total|default:3 }}</strong>
                     </div>
 
                     <div class="simple-stat">
                         <small>This Week</small>
-                        <strong>{{ weekly_checks|default:4 }}</strong>
+                        <strong>{{ weekly_checks|default:0 }}</strong>
                     </div>
 
                     <div class="simple-stat">
                         <small>Badges</small>
-                        <strong>{{ earned_badges_count|default:2 }}</strong>
+                        <strong>{{ earned_badges_count|default:0 }}</strong>
                     </div>
                 </div>
             </aside>

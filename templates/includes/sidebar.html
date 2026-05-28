@@ -33,8 +33,8 @@
       <span class="label">Counselor</span>
     </a>
 
-    <a href="{% url 'under_maintenance' %}"
-       class="sidebar-link {% if request.resolver_match.url_name == 'activity' %}sidebar-active{% endif %}">
+    <a href="{% url 'activity_hub' %}"
+       class="sidebar-link {% if request.resolver_match.url_name == 'activity_hub' %}sidebar-active{% endif %}">
       <span class="active-bar"></span>
       <span class="material-symbols-outlined icon">directions_run</span>
       <span class="label">Activity</span>

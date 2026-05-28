@@ -1,0 +1,224 @@
+{% extends "layouts/dashboard_base.html" %}
+{% load static %}
+
+{% block title %}4-7-8 Breathing | MindSpace{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+  --ms-card: #ffffff; --ms-text: #0f172a; --ms-muted: #64748b; --ms-border: #e2e8f0;
+  --ms-green: #059669; --ms-green-dark: #064e3b; --ms-green-soft: #ecfdf5;
+  --ms-blue-soft: #eff6ff; --ms-blue-text: #1d4ed8; --ms-purple-soft: #f5f3ff;
+  --ms-purple: #6d28d9; --ms-amber-soft: #fffbeb; --ms-amber-text: #92400e;
+  --ms-shadow: 0 1px 2px rgba(15, 23, 42, 0.04), 0 8px 18px rgba(15, 23, 42, 0.05);
+}
+@keyframes msFadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes deepGlow { 0%, 100% { filter: drop-shadow(0 0 8px rgba(109, 40, 217, 0.2)); } 50% { filter: drop-shadow(0 0 18px rgba(109, 40, 217, 0.45)); } }
+.support-hero { display: grid; grid-template-columns: 1.4fr 0.8fr; gap: 16px; animation: msFadeUp 0.45s ease; }
+.page-badge { display: inline-flex; padding: 5px 12px; border-radius: 999px; background: var(--ms-purple-soft); color: var(--ms-purple); border: 1px solid #ddd6fe; font-size: 0.72rem; font-weight: 900; text-transform: uppercase; }
+.dashboard-root { max-width: 1100px; margin: 0 auto; padding: 16px; font-family: Inter, system-ui, sans-serif; }
+.card { background: var(--ms-card); border: 1px solid var(--ms-border); border-radius: 18px; box-shadow: var(--ms-shadow); }
+.manodarpan-card { background: var(--ms-purple-soft); border: 1px solid #ddd6fe; border-radius: 22px; }
+.hidden { display: none !important; }
+.viz-wrap { position: relative; width: 280px; height: 280px; margin: 0 auto; }
+.deep-circle { transform-origin: center; animation: deepGlow 19s ease-in-out infinite; }
+.phase-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 14px; }
+.phase-chip { text-align: center; padding: 10px 4px; border-radius: 12px; border: 1px solid var(--ms-border); font-size: 0.72rem; font-weight: 700; }
+.phase-chip.active { background: var(--ms-purple-soft); border-color: #ddd6fe; color: var(--ms-purple); }
+.option-pill { padding: 10px 12px; border: 1px solid var(--ms-border); border-radius: 12px; background: #fff; cursor: pointer; font-weight: 600; font-size: 0.85rem; }
+.option-pill.active { background: var(--ms-purple); color: #fff; border-color: var(--ms-purple); }
+.options-group { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+.primary-btn { background: linear-gradient(135deg, #5b21b6, var(--ms-purple)); color: #fff; border: none; padding: 14px; border-radius: 14px; font-weight: 700; width: 100%; cursor: pointer; }
+.secondary-btn { background: #fff; border: 1px solid var(--ms-border); padding: 12px; border-radius: 14px; font-weight: 700; flex: 1; cursor: pointer; }
+.progress-bar-container { height: 8px; background: var(--ms-border); border-radius: 999px; overflow: hidden; }
+.progress-fill { height: 100%; background: linear-gradient(90deg, #5b21b6, var(--ms-purple)); transition: width 0.1s linear; }
+.viz-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; pointer-events: none; }
+.note-soft { font-size: 0.8rem; color: var(--ms-muted); background: #f8fafc; padding: 10px; border-radius: 10px; margin-top: 12px; }
+@media (max-width: 1000px) { .support-hero { grid-template-columns: 1fr; } }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="dashboard-root">
+    <div id="screen-landing">
+        <div class="support-hero">
+            <div class="card" style="padding:22px;">
+                <span class="page-badge">Deep Release</span>
+                <h1 style="font-size:2.2rem;font-weight:900;margin:12px 0;">4-7-8 Breathing</h1>
+                <p style="color:var(--ms-muted);line-height:1.6;">4s inhale → 7s hold → 8s exhale. Strong slowing response for high agitation, racing thoughts, or sleep difficulty.</p>
+                <p style="color:var(--ms-muted);font-size:0.85rem;"><strong>Best for:</strong> high arousal · use adaptive mode if you're new</p>
+                <div class="card" style="margin-top:16px;padding:20px;background:#fafbfc;">
+                    <div class="viz-wrap">
+                        <svg width="280" height="280" viewBox="0 0 280 280">
+                            <circle cx="140" cy="140" r="115" fill="none" stroke="var(--ms-border)" stroke-width="3"/>
+                            <circle class="deep-circle" cx="140" cy="140" r="75" fill="var(--ms-purple-soft)" stroke="var(--ms-purple)" stroke-width="3"/>
+                        </svg>
+                        <div class="viz-center">
+                            <div style="font-weight:800;color:var(--ms-purple);text-transform:uppercase;">4 · 7 · 8</div>
+                            <div style="font-size:0.72rem;color:var(--ms-muted);">inhale · hold · exhale</div>
+                        </div>
+                    </div>
+                    <div class="phase-grid" id="preview-chips">
+                        <div class="phase-chip active">Inhale 4s</div>
+                        <div class="phase-chip">Hold 7s</div>
+                        <div class="phase-chip">Exhale 8s</div>
+                    </div>
+                </div>
+            </div>
+            <div class="card" style="padding:28px;">
+                <h2 style="font-weight:800;">Session Setup</h2>
+                <div class="settings-title" style="font-weight:700;margin:12px 0 8px;">Pattern</div>
+                <div class="options-group" id="group-pattern">
+                    <button type="button" class="option-pill active" data-pattern="478">4-7-8</button>
+                    <button type="button" class="option-pill" data-pattern="356">3-5-6 (Beginner)</button>
+                </div>
+                <div class="options-group" id="group-cycles">
+                    <button type="button" class="option-pill" data-val="2">2</button>
+                    <button type="button" class="option-pill active" data-val="4">4</button>
+                    <button type="button" class="option-pill" data-val="6">6</button>
+                </div>
+                <button type="button" id="btn-start" class="primary-btn">Begin Exercise</button>
+                <p class="note-soft">Completion is tracked — rhythm precision is optional for beginners.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-activity" class="hidden">
+        <div class="manodarpan-card" style="max-width:560px;margin:16px auto;padding:36px;text-align:center;">
+            <span class="page-badge">DEEP RELEASE</span>
+            <div class="viz-wrap" style="margin:16px auto;">
+                <svg width="280" height="280" viewBox="0 0 280 280">
+                    <circle cx="140" cy="140" r="118" fill="none" stroke="rgba(109,40,217,0.1)" stroke-width="4"/>
+                    <circle id="session-ring" cx="140" cy="140" r="78" fill="var(--ms-purple-soft)" stroke="var(--ms-purple)" stroke-width="3" style="transform-origin:center;"/>
+                </svg>
+                <div class="viz-center">
+                    <div id="lbl-phase" style="font-weight:800;text-transform:uppercase;color:var(--ms-purple);">Inhale</div>
+                    <div id="lbl-timer" style="font-size:3.2rem;font-weight:900;">4</div>
+                    <div id="lbl-sub" style="font-size:0.7rem;color:var(--ms-muted);">Relax your shoulders</div>
+                </div>
+            </div>
+            <div style="max-width:380px;margin:0 auto 20px;">
+                <div style="display:flex;justify-content:space-between;font-weight:700;margin-bottom:8px;"><span id="lbl-cycle">Cycle 1</span><span id="lbl-elapsed">00:00</span></div>
+                <div class="progress-bar-container"><div id="progress-fill" class="progress-fill" style="width:0%;"></div></div>
+            </div>
+            <div style="display:flex;gap:12px;max-width:380px;margin:0 auto;">
+                <button type="button" id="btn-pause" class="secondary-btn"><span id="txt-pause">Pause</span></button>
+                <button type="button" id="btn-finish" class="secondary-btn">Finish</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-completion" class="hidden">
+        <div class="card" style="max-width:500px;margin:24px auto;padding:40px;text-align:center;border-color:#ddd6fe;background:linear-gradient(145deg,#fff,var(--ms-purple-soft));">
+            <h2 style="font-weight:900;color:var(--ms-purple);">Deep Release Complete</h2>
+            <p id="stat-info" style="color:var(--ms-muted);">—</p>
+            <button type="button" id="btn-restart" class="primary-btn" style="margin-top:16px;">Again</button>
+            <button type="button" id="btn-home" class="secondary-btn" style="width:100%;margin-top:8px;">Setup</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const PATTERNS = {
+        "478": [{ n: "Inhale", s: 4, sub: "Through the nose" }, { n: "Hold", s: 7, sub: "Stay soft and still" }, { n: "Exhale", s: 8, sub: "Slowly through the mouth" }],
+        "356": [{ n: "Inhale", s: 3, sub: "Gentle inhale" }, { n: "Hold", s: 5, sub: "Easy hold" }, { n: "Exhale", s: 6, sub: "Long relaxed exhale" }]
+    };
+    let patternKey = "478", totalCycles = 4;
+    let phase = 0, cycle = 1, running = false, paused = false;
+    let phaseStart = 0, sessionStart = 0, pauseTotal = 0, pauseAt = 0, tick = null, raf = null;
+
+    function pattern() { return PATTERNS[patternKey]; }
+    function $(id) { return document.getElementById(id); }
+
+    function updatePreviewChips() {
+        const p = pattern();
+        document.querySelectorAll("#preview-chips .phase-chip").forEach((el, i) => {
+            el.textContent = p[i].n + " " + p[i].s + "s";
+        });
+    }
+
+    document.getElementById("group-pattern").addEventListener("click", e => {
+        const b = e.target.closest(".option-pill");
+        if (!b) return;
+        document.querySelectorAll("#group-pattern .option-pill").forEach(x => x.classList.remove("active"));
+        b.classList.add("active");
+        patternKey = b.dataset.pattern;
+        updatePreviewChips();
+    });
+    document.getElementById("group-cycles").addEventListener("click", e => {
+        const b = e.target.closest(".option-pill");
+        if (!b) return;
+        document.querySelectorAll("#group-cycles .option-pill").forEach(x => x.classList.remove("active"));
+        b.classList.add("active");
+        totalCycles = +b.dataset.val;
+    });
+
+    function scale478(p, ratio) {
+        if (p === 0) return 0.75 + ratio * 0.45;
+        if (p === 1) return 1.2;
+        return 1.2 - ratio * 0.5;
+    }
+
+    function show(s) {
+        ["screen-landing", "screen-activity", "screen-completion"].forEach(id => $(id).classList.toggle("hidden", id !== s));
+    }
+
+    function render() {
+        if (!running || paused) return;
+        const ph = pattern()[phase];
+        const ratio = Math.min(1, (Date.now() - phaseStart) / 1000 / ph.s);
+        $("session-ring").style.transform = "scale(" + scale478(phase, ratio) + ")";
+        raf = requestAnimationFrame(render);
+    }
+
+    function tickFn() {
+        if (!running || paused) return;
+        const ph = pattern()[phase];
+        const elapsed = (Date.now() - phaseStart) / 1000;
+        $("lbl-timer").textContent = Math.max(0, Math.ceil(ph.s - elapsed));
+        $("lbl-phase").textContent = ph.n;
+        $("lbl-sub").textContent = ph.sub;
+        const cycleLen = pattern().reduce((a, x) => a + x.s, 0);
+        let before = 0;
+        for (let i = 0; i < phase; i++) before += pattern()[i].s;
+        const done = (cycle - 1) * cycleLen + before + elapsed;
+        $("progress-fill").style.width = Math.min(100, done / (totalCycles * cycleLen) * 100) + "%";
+        $("lbl-cycle").textContent = "Cycle " + cycle + " of " + totalCycles;
+        const sec = Math.floor((Date.now() - sessionStart - pauseTotal) / 1000);
+        $("lbl-elapsed").textContent = String(Math.floor(sec / 60)).padStart(2, "0") + ":" + String(sec % 60).padStart(2, "0");
+        if (elapsed >= ph.s) {
+            phase++;
+            if (phase >= 3) { phase = 0; cycle++; if (cycle > totalCycles) { end(); return; } }
+            phaseStart = Date.now();
+        }
+    }
+
+    function start() {
+        show("screen-activity");
+        phase = 0; cycle = 1; running = true; paused = false; pauseTotal = 0;
+        sessionStart = phaseStart = Date.now();
+        tick = setInterval(tickFn, 100);
+        render();
+    }
+
+    function end() {
+        running = false;
+        clearInterval(tick);
+        if (raf) cancelAnimationFrame(raf);
+        $("stat-info").textContent = "Completed " + (cycle - 1) + " cycles (" + patternKey + " pattern)";
+        show("screen-completion");
+    }
+
+    $("btn-start").onclick = start;
+    $("btn-restart").onclick = start;
+    $("btn-home").onclick = () => { running = false; clearInterval(tick); show("screen-landing"); };
+    $("btn-finish").onclick = end;
+    $("btn-pause").onclick = () => {
+        paused = !paused;
+        if (paused) { pauseAt = Date.now(); $("txt-pause").textContent = "Resume"; }
+        else { const d = Date.now() - pauseAt; pauseTotal += d; phaseStart += d; $("txt-pause").textContent = "Pause"; render(); }
+    };
+})();
+</script>
+{% endblock %}

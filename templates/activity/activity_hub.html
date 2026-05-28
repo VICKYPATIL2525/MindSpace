@@ -1,0 +1,256 @@
+{% extends "layouts/dashboard_base.html" %}
+{% load static %}
+
+{% block title %}Activity | MindSpace{% endblock %}
+
+{% block extra_css %}
+<style>
+.activity-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 18px;
+    color: #0f172a;
+}
+
+.activity-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1.2fr) 340px;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.activity-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 22px;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+    padding: 18px;
+}
+
+.activity-badge {
+    display: inline-flex;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+    font-size: 0.72rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.activity-card h1 {
+    margin: 12px 0 8px;
+    font-size: 1.8rem;
+    color: #064e3b;
+    line-height: 1.15;
+}
+
+.activity-card p {
+    margin: 0;
+    color: #64748b;
+    line-height: 1.55;
+    font-size: 0.88rem;
+}
+
+.result-box {
+    background: linear-gradient(145deg, #ecfdf5, #ffffff);
+    border-color: #a7f3d0;
+}
+
+.result-label {
+    font-size: 1.45rem;
+    font-weight: 950;
+    color: #064e3b;
+    text-transform: capitalize;
+    margin-top: 10px;
+}
+
+.result-score {
+    margin-top: 4px;
+    font-size: 0.8rem;
+    color: #64748b;
+    font-weight: 800;
+}
+
+.recommended-card {
+    margin-bottom: 14px;
+    background: linear-gradient(145deg, #ffffff, #f0fdf4);
+    border-color: #a7f3d0;
+}
+
+.primary-activity {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+    margin-top: 14px;
+    padding: 14px;
+    border-radius: 18px;
+    background: #ffffff;
+    border: 1px solid #a7f3d0;
+}
+
+.primary-activity strong {
+    display: block;
+    font-size: 1rem;
+    color: #0f172a;
+}
+
+.primary-activity span {
+    display: block;
+    margin-top: 4px;
+    color: #64748b;
+    font-size: 0.78rem;
+}
+
+.activity-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 11px 14px;
+    border-radius: 13px;
+    background: #059669;
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: 900;
+    font-size: 0.78rem;
+    white-space: nowrap;
+}
+
+.activity-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.mini-activity {
+    padding: 14px;
+    border-radius: 18px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    text-decoration: none;
+    color: #0f172a;
+    transition: 0.2s ease;
+}
+
+.mini-activity:hover {
+    transform: translateY(-2px);
+    border-color: #a7f3d0;
+    background: #ecfdf5;
+}
+
+.mini-activity strong {
+    display: block;
+    font-size: 0.84rem;
+    font-weight: 950;
+}
+
+.mini-activity span {
+    display: block;
+    margin-top: 6px;
+    color: #64748b;
+    font-size: 0.72rem;
+    font-weight: 800;
+}
+
+.safety-note {
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: 16px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #92400e;
+    font-size: 0.78rem;
+    line-height: 1.45;
+    font-weight: 700;
+}
+
+@media (max-width: 900px) {
+    .activity-hero {
+        grid-template-columns: 1fr;
+    }
+
+    .activity-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 560px) {
+    .activity-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .primary-activity {
+        display: grid;
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="activity-page">
+
+    <section class="activity-hero">
+        <div class="activity-card">
+            <span class="activity-badge">Personalized Activity</span>
+            <h1>{{ recommendation.title }}</h1>
+            <p>{{ recommendation.subtitle }}</p>
+
+            <div class="safety-note">
+                These activities are wellness support tools, not medical treatment. For urgent concerns, contact a trusted person, counselor, or emergency service.
+            </div>
+        </div>
+
+        <div class="activity-card result-box">
+            <span class="activity-badge">Latest Result</span>
+            <div class="result-label">{{ latest_label|title }}</div>
+
+            {% if latest_score %}
+                <div class="result-score">Combined score: {{ latest_score|floatformat:2 }}</div>
+            {% else %}
+                <div class="result-score">Complete a wellness check to personalize this page.</div>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="activity-card recommended-card">
+        <span class="activity-badge">Recommended First</span>
+
+        <div class="primary-activity">
+            <div>
+                <strong>{{ recommendation.primary.name }}</strong>
+                <span>{{ recommendation.primary.description }} • {{ recommendation.primary.time }}</span>
+            </div>
+
+            {% if recommendation.primary.url_name == "#" %}
+                <a href="#" class="activity-btn">Coming Soon</a>
+            {% else %}
+                <a href="{% url recommendation.primary.url_name %}" class="activity-btn">Start Now</a>
+            {% endif %}
+        </div>
+    </section>
+
+    <section class="activity-card">
+        <span class="activity-badge">More Activities</span>
+
+        <div class="activity-grid" style="margin-top:14px;">
+            {% for item in recommendation.activities %}
+                {% if item.url_name == "#" %}
+                    <a href="#" class="mini-activity">
+                        <strong>{{ item.name }}</strong>
+                        <span>{{ item.time }} • Coming soon</span>
+                    </a>
+                {% else %}
+                    <a href="{% url item.url_name %}" class="mini-activity">
+                        <strong>{{ item.name }}</strong>
+                        <span>{{ item.time }} • Start</span>
+                    </a>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </section>
+
+</div>
+{% endblock %}

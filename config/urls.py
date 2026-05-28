@@ -14,6 +14,7 @@ from mindspace.views.profiles import views as profile_views
 from mindspace.views.security import views as security_views
 from mindspace.views.governance import views as governance_views
 from mindspace.views.analysis import views as analysis_views
+from mindspace.views.activity import views as activity_views
 
 
 urlpatterns = [
@@ -264,6 +265,28 @@ urlpatterns = [
         governance_views.data_retention_request_api,
         name="data_retention_request_api",
     ),
+
+    # ============================================================
+    # activity page
+    # ============================================================
+
+    path("activity/", activity_views.activity_hub_view, name="activity_hub"),
+
+    path("activity/breathing/box/", activity_views.breath_box_view, name="breath_box"),
+    path("activity/breathing/478/", activity_views.breath_478_view, name="breath_478"),
+    path("activity/breathing/extended-exhale/", activity_views.breath_extended_exhale_view, name="breath_extended_exhale"),
+    path("activity/breathing/paced-recovery/", activity_views.breath_paced_recovery_view, name="breath_paced_recovery"),
+    path("activity/breathing/resonance/", activity_views.breath_resonance_view, name="breath_resonance"),
+    path("activity/breathing/triangle/", activity_views.breath_triangle_view, name="breath_triangle"),
+
+    path("activity/movement/grounding-flow/", activity_views.activity_grounding_flow_view, name="activity_grounding_flow"),
+    path("activity/movement/neck-release/", activity_views.activity_neck_release_view, name="activity_neck_release"),
+    path("activity/movement/shoulder-unlock/", activity_views.activity_shoulder_unlock_view, name="activity_shoulder_unlock"),
+    path("activity/movement/spine-wakeup/", activity_views.activity_spine_wakeup_view, name="activity_spine_wakeup"),
+    path("activity/movement/stillness-stretch/", activity_views.activity_stillness_stretch_view, name="activity_stillness_stretch"),
+
+
+
 ]
 
 

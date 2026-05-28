@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 240" role="img" aria-label="Left neck tilt instruction">
+  <rect width="320" height="240" fill="#f8fafc" rx="16"/>
+  <circle cx="160" cy="52" r="22" fill="#ecfdf5" stroke="#059669" stroke-width="3"/>
+  <path d="M160 74 L160 150" stroke="#0f172a" stroke-width="4" stroke-linecap="round"/>
+  <path d="M160 95 L115 120" stroke="#0f172a" stroke-width="4" stroke-linecap="round"/>
+  <path d="M160 95 L205 120" stroke="#0f172a" stroke-width="4" stroke-linecap="round"/>
+  <path d="M160 150 L130 210" stroke="#0f172a" stroke-width="4" stroke-linecap="round"/>
+  <path d="M160 150 L190 210" stroke="#0f172a" stroke-width="4" stroke-linecap="round"/>
+  <path d="M148 48 Q115 70 148 62" fill="none" stroke="#059669" stroke-width="4" stroke-linecap="round"/>
+  <text x="160" y="228" text-anchor="middle" font-family="Inter,sans-serif" font-size="13" fill="#64748b">Tilt left ear toward shoulder · hold steady</text>
+</svg>
