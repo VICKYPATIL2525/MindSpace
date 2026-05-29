@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Verify your MindSpace account</title>
+</head>
+
+<body style="margin:0;padding:0;background:#f4f8fb;font-family:Arial,sans-serif;color:#0f172a;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f8fb;padding:32px 12px;">
+    <tr>
+      <td align="center">
+        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:18px;border:1px solid #e2e8f0;overflow:hidden;">
+
+          <tr>
+            <td style="padding:28px 28px 10px;">
+              <div style="display:inline-block;padding:6px 12px;border-radius:999px;background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;font-size:12px;font-weight:700;">
+                MindSpace Verification
+              </div>
+
+              <h1 style="margin:18px 0 10px;font-size:24px;color:#064e3b;">
+                Verify your email
+              </h1>
+
+              <p style="margin:0;color:#64748b;font-size:15px;line-height:1.6;">
+                Hi {{ name|default:"there" }}, thanks for signing up for MindSpace.
+                Click the button below to verify your email address and activate your account.
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td align="center" style="padding:26px 28px;">
+              <a href="{{ verification_url }}"
+                 style="display:inline-block;background:#059669;color:#ffffff;text-decoration:none;padding:14px 26px;border-radius:12px;font-size:15px;font-weight:700;">
+                Verify Email
+              </a>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:0 28px 24px;">
+              <p style="margin:0;color:#64748b;font-size:13px;line-height:1.6;text-align:center;">
+                This verification button will expire in {{ expires_in|default:"5 minutes" }}.
+              </p>
+            </td>
+          </tr>
+
+          <tr>
+            <td style="padding:18px 28px;background:#f8fafc;border-top:1px solid #e2e8f0;">
+              <p style="margin:0;color:#94a3b8;font-size:12px;line-height:1.5;text-align:center;">
+                If you did not create this account, you can safely ignore this email.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>

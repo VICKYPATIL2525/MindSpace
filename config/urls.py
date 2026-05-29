@@ -4,7 +4,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.views.generic.base import RedirectView
 
-
+from mindspace.views.chat import views as chat_views
 from mindspace.views.pages import views as pages_views
 from mindspace.views.accounts import views as account_views
 from mindspace.views.dashboard import views as dashboard_views
@@ -174,6 +174,13 @@ urlpatterns = [
         assessment_views.run_multimodal_fusion,
         name="run_multimodal_fusion",
     ),
+
+    # ============================================================
+    # CHAT APIs
+    # ============================================================
+
+    path("chat/", chat_views.chat_page_view, name="chat_page"),
+    path("chat/api/send/", chat_views.chat_api_proxy_view, name="chat_api_send"),
 
     # ============================================================
     # ANALYSIS APIs

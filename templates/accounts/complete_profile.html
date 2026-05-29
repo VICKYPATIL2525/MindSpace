@@ -252,6 +252,31 @@
     line-height: 1.4;
 }
 
+.field-error {
+    display: none;
+    color: #dc2626;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.4;
+}
+
+.form-group.has-error input,
+.form-group.has-error textarea,
+.form-group.has-error select {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.10);
+}
+
+.form-group.has-error .field-error {
+    display: block;
+}
+
+.form-group.is-valid input,
+.form-group.is-valid textarea,
+.form-group.is-valid select {
+    border-color: #10b981;
+}
+
 .form-actions {
     display: flex;
     justify-content: flex-end;
@@ -342,7 +367,7 @@
     </div>
 
 
-    <form method="post" class="profile-card" novalidate>
+    <form method="post" class="profile-card" id="completeProfileForm" novalidate>
         {% csrf_token %}
 
         <div class="step-indicator">
@@ -447,9 +472,18 @@
                         type="text"
                         name="first_name"
                         value="{{ profile.first_name|default:request.user.first_name }}"
-                        placeholder="Enter first name"
+                        placeholder="Example: Nakul"
+                        autocomplete="given-name"
+                        minlength="2"
+                        maxlength="100"
+                        pattern="^[A-Za-z][A-Za-z\s.'-]{1,99}$"
+                        title="Only letters, spaces, dot, apostrophe and hyphen are allowed."
+                        data-label="First name"
+                        data-required="true"
+                        data-pattern="name"
                         required
                     >
+                    <span class="field-error" id="first_name_error"></span>
                 </div>
 
                 <div class="form-group">
@@ -459,8 +493,15 @@
                         type="text"
                         name="last_name"
                         value="{{ profile.last_name|default:request.user.last_name }}"
-                        placeholder="Enter last name"
+                        placeholder="Example: Pejwar"
+                        autocomplete="family-name"
+                        maxlength="100"
+                        pattern="^[A-Za-z][A-Za-z\s.'-]{1,99}$"
+                        title="Only letters, spaces, dot, apostrophe and hyphen are allowed."
+                        data-label="Last name"
+                        data-pattern="optionalName"
                     >
+                    <span class="field-error" id="last_name_error"></span>
                 </div>
 
                 <div class="form-group">
@@ -469,6 +510,7 @@
                         id="email"
                         type="email"
                         value="{{ request.user.email }}"
+                        autocomplete="email"
                         readonly
                     >
                     <span class="help-text">Email is managed from your login account.</span>
@@ -481,8 +523,18 @@
                         type="tel"
                         name="mobile_number"
                         value="{{ profile.mobile_number|default:'' }}"
-                        placeholder="Enter mobile number"
+                        placeholder="Example: 9876543210"
+                        autocomplete="tel"
+                        maxlength="13"
+                        inputmode="numeric"
+                        pattern="^(\+91|91)?[6-9][0-9]{9}$"
+                        title="Enter a valid Indian mobile number like 9876543210 or +919876543210."
+                        data-label="Mobile number"
+                        data-required="true"
+                        data-pattern="mobile"
+                        required
                     >
+                    <span class="field-error" id="mobile_number_error"></span>
                 </div>
             </div>
 
@@ -501,13 +553,20 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label for="gender">Gender</label>
-                    <select id="gender" name="gender">
+                    <select
+                        id="gender"
+                        name="gender"
+                        data-label="Gender"
+                        data-required="true"
+                        required
+                    >
                         <option value="">Select gender</option>
                         <option value="Male" {% if profile.gender == "Male" %}selected{% endif %}>Male</option>
                         <option value="Female" {% if profile.gender == "Female" %}selected{% endif %}>Female</option>
                         <option value="Other" {% if profile.gender == "Other" %}selected{% endif %}>Other</option>
                         <option value="Prefer not to say" {% if profile.gender == "Prefer not to say" %}selected{% endif %}>Prefer not to say</option>
                     </select>
+                    <span class="field-error" id="gender_error"></span>
                 </div>
 
                 <div class="form-group">
@@ -517,7 +576,11 @@
                         type="date"
                         name="date_of_birth"
                         value="{{ profile.date_of_birth|date:'Y-m-d' }}"
+                        data-label="Date of birth"
+                        data-required="true"
+                        required
                     >
+                    <span class="field-error" id="date_of_birth_error"></span>
                 </div>
 
                 <div class="form-group">
@@ -528,7 +591,17 @@
                         name="state"
                         value="{{ profile.state|default:'' }}"
                         placeholder="Example: Maharashtra"
+                        autocomplete="address-level1"
+                        minlength="2"
+                        maxlength="100"
+                        pattern="^[A-Za-z][A-Za-z\s.'\-&]{1,99}$"
+                        title="Only letters, spaces, dot, apostrophe, hyphen and & are allowed."
+                        data-label="State"
+                        data-required="true"
+                        data-pattern="location"
+                        required
                     >
+                    <span class="field-error" id="state_error"></span>
                 </div>
 
                 <div class="form-group">
@@ -539,7 +612,17 @@
                         name="district"
                         value="{{ profile.district|default:'' }}"
                         placeholder="Example: Buldhana"
+                        autocomplete="address-level2"
+                        minlength="2"
+                        maxlength="100"
+                        pattern="^[A-Za-z][A-Za-z\s.'\-&]{1,99}$"
+                        title="Only letters, spaces, dot, apostrophe, hyphen and & are allowed."
+                        data-label="District"
+                        data-required="true"
+                        data-pattern="location"
+                        required
                     >
+                    <span class="field-error" id="district_error"></span>
                 </div>
 
                 <div class="form-group full">
@@ -548,9 +631,17 @@
                         id="address"
                         name="address"
                         rows="4"
-                        placeholder="Enter address"
+                        placeholder="House/Area, City, State"
+                        autocomplete="street-address"
+                        minlength="10"
+                        maxlength="500"
+                        data-label="Address"
+                        data-required="true"
+                        data-pattern="address"
+                        required
                     >{{ profile.address|default:'' }}</textarea>
                     <span class="help-text">Keep this simple. Do not enter unnecessary sensitive details.</span>
+                    <span class="field-error" id="address_error"></span>
                 </div>
             </div>
 
@@ -564,16 +655,179 @@
 </div>
 
 <script>
-function nextStep() {
-    const firstName = document.getElementById("first_name");
+const SAFE_TEXT_BLOCKLIST = [
+    /<script/i,
+    /<\/script/i,
+    /javascript:/i,
+    /onerror\s*=/i,
+    /onclick\s*=/i,
+    /onload\s*=/i,
+    /<iframe/i,
+    /<object/i,
+    /<embed/i,
+    /<img/i,
+    /<svg/i,
+    /<link/i,
+    /<meta/i
+];
 
-    if (!firstName.value.trim()) {
-        firstName.focus();
-        firstName.style.borderColor = "#ef4444";
+const PATTERNS = {
+    name: /^[A-Za-z][A-Za-z\s.'-]{1,99}$/,
+    optionalName: /^[A-Za-z][A-Za-z\s.'-]{1,99}$/,
+    mobile: /^(\+91|91)?[6-9][0-9]{9}$/,
+    location: /^[A-Za-z][A-Za-z\s.'\-&]{1,99}$/,
+    address: /^[A-Za-z0-9][A-Za-z0-9\s.,/#()'&-]{9,499}$/
+};
+
+function todayMinusYears(years) {
+    const date = new Date();
+    date.setFullYear(date.getFullYear() - years);
+    return date.toISOString().split("T")[0];
+}
+
+function setupDateLimits() {
+    const dob = document.getElementById("date_of_birth");
+    if (!dob) return;
+
+    dob.max = todayMinusYears(5);
+    dob.min = todayMinusYears(120);
+}
+
+function normalizeValue(input) {
+    if (!input) return "";
+
+    if (input.id === "mobile_number") {
+        return input.value.trim().replace(/\s+/g, "").replace(/-/g, "");
+    }
+
+    return input.value.trim().replace(/\s+/g, " ");
+}
+
+function containsUnsafeText(value) {
+    return SAFE_TEXT_BLOCKLIST.some((pattern) => pattern.test(value));
+}
+
+function setFieldState(input, message) {
+    const group = input.closest(".form-group");
+    const error = document.getElementById(`${input.id}_error`);
+
+    if (!group) return;
+
+    group.classList.remove("has-error", "is-valid");
+
+    if (message) {
+        group.classList.add("has-error");
+        if (error) error.textContent = message;
         return;
     }
 
-    firstName.style.borderColor = "#dbe4ee";
+    if (input.value.trim()) {
+        group.classList.add("is-valid");
+    }
+
+    if (error) error.textContent = "";
+}
+
+function validateField(input) {
+    if (!input || input.readOnly) return true;
+
+    const label = input.dataset.label || "This field";
+    const value = normalizeValue(input);
+    const isRequired = input.dataset.required === "true" || input.required;
+    const patternName = input.dataset.pattern;
+
+    if (isRequired && !value) {
+        setFieldState(input, `${label} is required.`);
+        return false;
+    }
+
+    if (!isRequired && !value) {
+        setFieldState(input, "");
+        return true;
+    }
+
+    if (containsUnsafeText(value)) {
+        setFieldState(input, `${label} contains unsafe text. Please remove scripts or HTML.`);
+        return false;
+    }
+
+    if (patternName && PATTERNS[patternName] && !PATTERNS[patternName].test(value)) {
+        const messages = {
+            name: `${label} must contain only letters, spaces, dot, apostrophe or hyphen and must start with a letter.`,
+            optionalName: `${label} must contain only letters, spaces, dot, apostrophe or hyphen and must start with a letter.`,
+            mobile: "Enter a valid Indian mobile number like 9876543210 or +919876543210.",
+            location: `${label} must contain only letters, spaces, dot, apostrophe, hyphen or &.`,
+            address: "Address must be 10 to 500 characters and should not contain unsafe symbols or HTML."
+        };
+
+        setFieldState(input, messages[patternName] || `${label} has invalid format.`);
+        return false;
+    }
+
+    if (input.id === "date_of_birth") {
+        const selected = new Date(value);
+        const min = new Date(input.min);
+        const max = new Date(input.max);
+
+        if (Number.isNaN(selected.getTime())) {
+            setFieldState(input, "Enter a valid date of birth.");
+            return false;
+        }
+
+        if (selected < min || selected > max) {
+            setFieldState(input, "Age must be between 5 and 120 years.");
+            return false;
+        }
+    }
+
+    if (input.id === "gender") {
+        const allowed = ["Male", "Female", "Other", "Prefer not to say"];
+
+        if (!allowed.includes(value)) {
+            setFieldState(input, "Select a valid gender option.");
+            return false;
+        }
+    }
+
+    input.value = value;
+    setFieldState(input, "");
+    return true;
+}
+
+function validateStep(stepId) {
+    const step = document.getElementById(stepId);
+    const fields = step.querySelectorAll("input[name], select[name], textarea[name]");
+    let valid = true;
+    let firstInvalid = null;
+
+    fields.forEach((field) => {
+        if (field.type === "radio") return;
+
+        const fieldValid = validateField(field);
+
+        if (!fieldValid && !firstInvalid) {
+            firstInvalid = field;
+        }
+
+        valid = valid && fieldValid;
+    });
+
+    const selectedAvatar = document.querySelector('input[name="avatar"]:checked');
+    if (stepId === "step1" && !selectedAvatar) {
+        valid = false;
+    }
+
+    if (firstInvalid) {
+        firstInvalid.focus();
+    }
+
+    return valid;
+}
+
+function nextStep() {
+    if (!validateStep("step1")) {
+        return;
+    }
 
     document.getElementById("step1").classList.remove("active");
     document.getElementById("step2").classList.add("active");
@@ -587,6 +841,51 @@ function prevStep() {
     document.getElementById("dot2").classList.remove("active");
     document.getElementById("dot1").classList.add("active");
 }
+
+document.addEventListener("DOMContentLoaded", function () {
+    setupDateLimits();
+
+    const form = document.getElementById("completeProfileForm");
+    const fields = form.querySelectorAll("input[name], select[name], textarea[name]");
+
+    fields.forEach((field) => {
+        if (field.type === "radio") return;
+
+        field.addEventListener("input", function () {
+            validateField(field);
+        });
+
+        field.addEventListener("blur", function () {
+            validateField(field);
+        });
+
+        field.addEventListener("change", function () {
+            validateField(field);
+        });
+    });
+
+    form.addEventListener("submit", function (event) {
+        const step1Valid = validateStep("step1");
+        const step2Valid = validateStep("step2");
+
+        if (!step1Valid) {
+            event.preventDefault();
+            document.getElementById("step2").classList.remove("active");
+            document.getElementById("step1").classList.add("active");
+            document.getElementById("dot2").classList.remove("active");
+            document.getElementById("dot1").classList.add("active");
+            return;
+        }
+
+        if (!step2Valid) {
+            event.preventDefault();
+            document.getElementById("step1").classList.remove("active");
+            document.getElementById("step2").classList.add("active");
+            document.getElementById("dot1").classList.remove("active");
+            document.getElementById("dot2").classList.add("active");
+        }
+    });
+});
 </script>
 
 {% endblock %}

@@ -94,7 +94,7 @@ ACTIVITY_RECOMMENDATIONS = {
             "time": "Now",
         },
         "activities": [
-            {"name": "Contact Counselor", "url_name": "counselor", "time": "Now"},
+            {"name": "Contact Counselor", "url_name": "counselor_support", "time": "Now"},
             {"name": "Paced Recovery Breathing", "url_name": "breath_paced_recovery", "time": "3 min"},
             {"name": "5-4-3-2-1 Grounding", "url_name": "#", "time": "4 min"},
             {"name": "Safety Plan", "url_name": "#", "time": "5 min"},

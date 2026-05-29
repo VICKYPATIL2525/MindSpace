@@ -1,971 +1,520 @@
 {% extends "layouts/dashboard_base.html" %}
 {% load static %}
 
-{% block title %}Chat | MindSpace{% endblock %}
+{% block title %}Chat Support | MindSpace{% endblock %}
+
+{% block extra_css %}
+<style>
+.chat-page {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 8px 18px;
+    color: #0f172a;
+    height: calc(100vh - 80px);
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.chat-shell {
+    display: grid;
+    grid-template-columns: 320px minmax(0, 1fr);
+    gap: 14px;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+}
+
+.chat-side,
+.chat-main {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 22px;
+    box-shadow: 0 8px 18px rgba(15, 23, 42, 0.05);
+}
+
+.chat-side {
+    padding: 18px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    min-height: 0;
+}
+
+.chat-badge {
+    display: inline-flex;
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+    font-size: 0.72rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.chat-side h1 {
+    margin: 14px 0 8px;
+    color: #064e3b;
+    font-size: 1.55rem;
+    line-height: 1.15;
+}
+
+.chat-side p {
+    margin: 0;
+    color: #64748b;
+    font-size: 0.86rem;
+    line-height: 1.55;
+}
+
+.quick-prompts {
+    display: grid;
+    gap: 8px;
+    margin-top: 18px;
+}
+
+.quick-prompt {
+    width: 100%;
+    text-align: left;
+    padding: 11px 12px;
+    border-radius: 14px;
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    color: #0f172a;
+    font-size: 0.78rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.quick-prompt:hover {
+    background: #ecfdf5;
+    border-color: #a7f3d0;
+}
+
+.safety-note {
+    margin-top: 18px;
+    padding: 12px;
+    border-radius: 16px;
+    background: #fffbeb;
+    border: 1px solid #fde68a;
+    color: #92400e;
+    font-size: 0.76rem;
+    line-height: 1.45;
+    font-weight: 700;
+}
+
+.chat-main {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    min-height: 0;
+}
+
+.chat-header {
+    padding: 15px 18px;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.chat-header strong {
+    display: block;
+    color: #0f172a;
+    font-size: 0.95rem;
+    font-weight: 950;
+}
+
+.chat-header span {
+    display: block;
+    margin-top: 3px;
+    color: #64748b;
+    font-size: 0.74rem;
+    font-weight: 700;
+}
+
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 10px;
+    border-radius: 999px;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+    font-size: 0.72rem;
+    font-weight: 900;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 999px;
+    background: #059669;
+}
+
+.chat-messages {
+    flex: 1;
+    min-height: 0;
+    padding: 18px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    background:
+        radial-gradient(circle at top left, rgba(16, 185, 129, 0.07), transparent 35%),
+        #f8fafc;
+    scroll-behavior: smooth;
+}
+
+.message-row {
+    display: flex;
+    margin-bottom: 12px;
+}
+
+.message-row.user {
+    justify-content: flex-end;
+}
+
+.message-bubble {
+    max-width: min(680px, 78%);
+    padding: 12px 14px;
+    border-radius: 18px;
+    font-size: 0.88rem;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.message-row.bot .message-bubble {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    color: #0f172a;
+    border-top-left-radius: 6px;
+}
+
+.message-row.user .message-bubble {
+    background: linear-gradient(135deg, #065f46, #059669);
+    color: #ffffff;
+    border-top-right-radius: 6px;
+}
+
+.chat-input-wrap {
+    padding: 14px;
+    border-top: 1px solid #e2e8f0;
+    background: #ffffff;
+}
+
+.chat-form {
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+}
+
+.chat-input {
+    flex: 1;
+    resize: none;
+    min-height: 46px;
+    max-height: 120px;
+    padding: 13px 14px;
+    border-radius: 15px;
+    border: 1px solid #e2e8f0;
+    outline: none;
+    font-size: 0.88rem;
+    font-family: inherit;
+}
+
+.chat-input:focus {
+    border-color: #059669;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
+}
+
+.send-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 15px;
+    border: none;
+    background: #059669;
+    color: #ffffff;
+    cursor: pointer;
+    display: grid;
+    place-items: center;
+}
+
+.send-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.typing {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.typing i {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: #94a3b8;
+    animation: typingBlink 1s infinite ease-in-out;
+}
+
+.typing i:nth-child(2) { animation-delay: 0.15s; }
+.typing i:nth-child(3) { animation-delay: 0.30s; }
+
+@keyframes typingBlink {
+    0%, 80%, 100% { opacity: 0.35; transform: translateY(0); }
+    40% { opacity: 1; transform: translateY(-3px); }
+}
+
+@media (max-width: 900px) {
+    .chat-page {
+        height: calc(100vh - 70px);
+        padding: 8px 12px;
+    }
+
+    .chat-shell {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto minmax(0, 1fr);
+        height: 100%;
+        min-height: 0;
+    }
+
+    .chat-side {
+        max-height: 230px;
+        min-height: 0;
+    }
+
+    .chat-main {
+        min-height: 0;
+    }
+}
+
+@media (max-width: 560px) {
+    .chat-page {
+        padding: 8px;
+        height: calc(100vh - 64px);
+    }
+
+    .chat-side {
+        max-height: 210px;
+    }
+
+    .message-bubble {
+        max-width: 90%;
+    }
+}
+</style>
+{% endblock %}
 
 {% block content %}
+<div class="chat-page">
+    <div class="chat-shell">
 
-<div class="mind-chat-page">
+        <aside class="chat-side">
+            <span class="chat-badge">MindSpace Chat</span>
 
-    <div class="mind-chat-shell">
+            <h1>Talk through what you are feeling.</h1>
 
-        <!-- LEFT: CONVERSATIONS -->
-        <aside class="mind-thread-panel">
+            <p>
+                This chatbot can help you reflect, calm down, and choose a next step.
+                It is not a replacement for a counselor or emergency support.
+            </p>
 
-            <div class="mind-thread-head">
-                <span>Support</span>
-                <h1>Chat</h1>
-                <p>AI support and counselor conversations.</p>
+            <div class="quick-prompts">
+                <button type="button" class="quick-prompt" data-prompt="I am feeling stressed. Help me calm down.">
+                    I am feeling stressed
+                </button>
+
+                <button type="button" class="quick-prompt" data-prompt="I feel anxious. Guide me through a grounding exercise.">
+                    I feel anxious
+                </button>
+
+                <button type="button" class="quick-prompt" data-prompt="Help me write down what I am feeling right now.">
+                    Help me reflect
+                </button>
+
+                <button type="button" class="quick-prompt" data-prompt="Suggest a short wellness activity for me.">
+                    Suggest activity
+                </button>
             </div>
 
-            <div class="mind-search">
-                <span class="material-symbols-outlined">search</span>
-                <input type="text" id="searchInput" placeholder="Search conversations">
+            <div class="safety-note">
+                If you feel unsafe or may harm yourself, contact a trusted person, counselor, local emergency service, or crisis helpline immediately.
             </div>
-
-            <div class="mind-thread-list">
-
-                {% for conversation in conversations %}
-                <a
-                    href="{% url 'chat' %}?conversation={{ conversation.id }}"
-                    class="mind-thread {% if active_conversation and conversation.id == active_conversation.id %}active{% endif %}"
-                    data-title="{% if conversation.conversation_type == 'counselor' and role == 'counselor' %}{{ conversation.user.get_full_name|default:conversation.user.username }}{% else %}{{ conversation.title }}{% endif %}"
-                >
-                    <div class="mind-avatar {% if conversation.conversation_type == 'ai' %}ai{% elif conversation.conversation_type == 'team' %}team{% else %}counselor{% endif %}">
-                        {% if conversation.conversation_type == "ai" %}
-                            A
-                        {% elif conversation.conversation_type == "team" %}
-                            M
-                        {% else %}
-                            C
-                        {% endif %}
-                        <i></i>
-                    </div>
-
-                    <div class="mind-thread-info">
-                        <div>
-                            <h3>
-                                {% if conversation.conversation_type == "counselor" and role == "counselor" %}
-                                    {{ conversation.user.get_full_name|default:conversation.user.username }}
-                                {% else %}
-                                    {{ conversation.title }}
-                                {% endif %}
-                            </h3>
-                            <small>{{ conversation.updated_at|date:"h:i A" }}</small>
-                        </div>
-
-                        <p>
-                            {% with last_message=conversation.messages.last %}
-                                {% if last_message %}
-                                    {{ last_message.message|truncatechars:42 }}
-                                {% else %}
-                                    Start a new conversation
-                                {% endif %}
-                            {% endwith %}
-                        </p>
-                    </div>
-                </a>
-                {% empty %}
-                <div class="mind-empty-small">
-                    No conversations yet.
-                </div>
-                {% endfor %}
-
-            </div>
-
         </aside>
 
-
-        <!-- RIGHT: CHAT -->
-        <section class="mind-chat-panel">
-
-            {% if active_conversation %}
-
-            <!-- CHAT HEADER -->
-            <header class="mind-chat-header">
-
-                <div class="mind-chat-user">
-                    <div class="mind-avatar large {% if active_conversation.conversation_type == 'ai' %}ai{% elif active_conversation.conversation_type == 'team' %}team{% else %}counselor{% endif %}">
-                        {% if active_conversation.conversation_type == "ai" %}
-                            A
-                        {% elif active_conversation.conversation_type == "team" %}
-                            M
-                        {% else %}
-                            C
-                        {% endif %}
-                        <i></i>
-                    </div>
-
-                    <div>
-                        <h2>
-                            {% if active_conversation.conversation_type == "counselor" and role == "counselor" %}
-                                {{ active_conversation.user.get_full_name|default:active_conversation.user.username }}
-                            {% else %}
-                                {{ active_conversation.title }}
-                            {% endif %}
-                        </h2>
-
-                        <p>
-                            {% if active_conversation.conversation_type == "ai" %}
-                                AI Wellness Assistant
-                            {% elif active_conversation.conversation_type == "counselor" %}
-                                Counselor support
-                            {% else %}
-                                MindSpace team
-                            {% endif %}
-                        </p>
-                    </div>
+        <section class="chat-main">
+            <div class="chat-header">
+                <div>
+                    <strong>MindSpace Assistant</strong>
+                    <span>Private supportive chat</span>
                 </div>
 
-                <div class="mind-chat-actions">
-                    <button type="button">
-                        <span class="material-symbols-outlined">videocam</span>
-                    </button>
-                    <button type="button">
-                        <span class="material-symbols-outlined">call</span>
-                    </button>
-                    <button type="button">
-                        <span class="material-symbols-outlined">more_vert</span>
-                    </button>
-                </div>
-
-            </header>
-
-
-            <!-- MESSAGES -->
-            <div class="mind-message-area" id="messageArea">
-
-                <div class="mind-day-pill">Today</div>
-
-                <div class="mind-message-list" id="messageList">
-
-                    {% for msg in messages %}
-
-                        {% if msg.sender_type == "user" and role == "user" %}
-                            <div class="mind-message own">
-                                <div class="mind-bubble own-bubble">{{ msg.message }}</div>
-                                <small>{{ msg.created_at|date:"h:i A" }}</small>
-                            </div>
-
-                        {% elif msg.sender_type == "counselor" and role == "counselor" %}
-                            <div class="mind-message own">
-                                <div class="mind-bubble own-bubble">{{ msg.message }}</div>
-                                <small>{{ msg.created_at|date:"h:i A" }}</small>
-                            </div>
-
-                        {% elif msg.sender_type == "system" and role == "admin" %}
-                            <div class="mind-message own">
-                                <div class="mind-bubble own-bubble">{{ msg.message }}</div>
-                                <small>{{ msg.created_at|date:"h:i A" }}</small>
-                            </div>
-
-                        {% else %}
-                            <div class="mind-message">
-                                <div class="mind-mini-avatar {% if msg.sender_type == 'ai' %}ai{% elif msg.sender_type == 'system' %}team{% else %}counselor{% endif %}">
-                                    {% if msg.sender_type == "ai" %}
-                                        A
-                                    {% elif msg.sender_type == "system" %}
-                                        M
-                                    {% else %}
-                                        C
-                                    {% endif %}
-                                </div>
-
-                                <div>
-                                    <div class="mind-bubble">{{ msg.message }}</div>
-                                    <small>{{ msg.created_at|date:"h:i A" }}</small>
-                                </div>
-                            </div>
-                        {% endif %}
-
-                    {% empty %}
-                    <div class="mind-empty-chat">
-                        <span class="material-symbols-outlined">forum</span>
-                        <h3>No messages yet</h3>
-                        <p>Start the conversation below.</p>
-                    </div>
-                    {% endfor %}
-
-                </div>
-
+                <span class="status-pill">
+                    <span class="status-dot"></span>
+                    Online
+                </span>
             </div>
 
+            <div id="chatMessages" class="chat-messages">
+                <div class="message-row bot">
+                    <div class="message-bubble">
+                        Hi, I’m here with you. What would you like to talk about today?
+                    </div>
+                </div>
+            </div>
 
-            <!-- INPUT -->
-            <form class="mind-input-wrap" id="chatForm">
-                {% csrf_token %}
-                <input type="hidden" id="conversationId" value="{{ active_conversation.id }}">
-
-                <div class="mind-input-box">
-                    <button type="button" class="mind-soft-btn">
-                        <span class="material-symbols-outlined">add_circle</span>
-                    </button>
-
-                    <input
-                        id="messageInput"
-                        type="text"
+            <div class="chat-input-wrap">
+                <form id="chatForm" class="chat-form">
+                    {% csrf_token %}
+                    <textarea
+                        id="chatInput"
+                        class="chat-input"
+                        rows="1"
                         placeholder="Type your message..."
                         autocomplete="off"
-                    >
+                    ></textarea>
 
-                    <button type="button" class="mind-soft-btn emoji-btn">
-                        <span class="material-symbols-outlined">mood</span>
-                    </button>
-
-                    <button type="submit" class="mind-send-btn">
+                    <button id="sendBtn" type="submit" class="send-btn" aria-label="Send message">
                         <span class="material-symbols-outlined">send</span>
                     </button>
-                </div>
-            </form>
-
-            {% else %}
-
-            <div class="mind-empty-chat big">
-                <span class="material-symbols-outlined">forum</span>
-                <h3>No conversation selected</h3>
-                <p>Select a conversation to start chatting.</p>
+                </form>
             </div>
-
-            {% endif %}
-
         </section>
 
     </div>
-
 </div>
 
-
-<style>
-    .mind-chat-page {
-        height: calc(100vh - 96px);
-        padding: 20px 24px;
-        background: #f4f8fb;
-        overflow: hidden;
-    }
-
-    .mind-chat-shell {
-        width: 100%;
-        max-width: 1080px;
-        height: 100%;
-        margin: 0 auto;
-        display: grid;
-        grid-template-columns: 310px minmax(0, 1fr);
-        background: #ffffff;
-        border: 1px solid #dff7ed;
-        border-radius: 24px;
-        overflow: hidden;
-        box-shadow: 0 18px 45px rgba(6, 78, 59, 0.07);
-    }
-
-    .mind-thread-panel {
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        background: #ffffff;
-        border-right: 1px solid #e5eee9;
-    }
-
-    .mind-thread-head {
-        padding: 20px 20px 14px;
-        border-bottom: 1px solid #edf4ef;
-    }
-
-    .mind-thread-head span {
-        display: block;
-        color: #059669;
-        font-size: 11px;
-        font-weight: 900;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        margin-bottom: 5px;
-    }
-
-    .mind-thread-head h1 {
-        margin: 0;
-        color: #064e3b;
-        font-size: 26px;
-        line-height: 1.1;
-        font-weight: 900;
-    }
-
-    .mind-thread-head p {
-        margin: 6px 0 0;
-        color: #64748b;
-        font-size: 13px;
-        line-height: 1.4;
-        font-weight: 650;
-    }
-
-    .mind-search {
-        margin: 16px 20px;
-        height: 46px;
-        border-radius: 16px;
-        border: 1px solid #dff7ed;
-        background: #f8fafc;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 0 14px;
-        color: #94a3b8;
-    }
-
-    .mind-search input {
-        width: 100%;
-        min-width: 0;
-        border: none;
-        outline: none;
-        background: transparent;
-        color: #334155;
-        font-size: 14px;
-    }
-
-    .mind-thread-list {
-        flex: 1;
-        min-height: 0;
-        overflow-y: auto;
-        padding-bottom: 10px;
-    }
-
-    .mind-thread {
-        display: flex;
-        gap: 12px;
-        align-items: center;
-        padding: 14px 18px;
-        text-decoration: none;
-        color: inherit;
-        border-left: 4px solid transparent;
-        transition: 0.18s ease;
-    }
-
-    .mind-thread:hover {
-        background: #f8fafc;
-    }
-
-    .mind-thread.active {
-        background: #ecfdf5;
-        border-left-color: #10b981;
-    }
-
-    .mind-avatar,
-    .mind-mini-avatar {
-        position: relative;
-        width: 46px;
-        height: 46px;
-        border-radius: 18px;
-        background: #065f46;
-        color: #ffffff;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-shrink: 0;
-        font-size: 18px;
-        font-weight: 900;
-    }
-
-    .mind-avatar.large {
-        width: 50px;
-        height: 50px;
-        border-radius: 18px;
-        font-size: 20px;
-    }
-
-    .mind-avatar.ai,
-    .mind-mini-avatar.ai {
-        background: #d1fae5;
-        color: #065f46;
-    }
-
-    .mind-avatar.team,
-    .mind-mini-avatar.team {
-        background: #e0f2fe;
-        color: #0369a1;
-    }
-
-    .mind-avatar i {
-        position: absolute;
-        right: -1px;
-        bottom: -1px;
-        width: 12px;
-        height: 12px;
-        border-radius: 999px;
-        background: #10b981;
-        border: 2px solid #ffffff;
-    }
-
-    .mind-thread-info {
-        min-width: 0;
-        flex: 1;
-    }
-
-    .mind-thread-info > div {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 8px;
-        margin-bottom: 4px;
-    }
-
-    .mind-thread-info h3 {
-        margin: 0;
-        color: #0f172a;
-        font-size: 15px;
-        font-weight: 900;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-    }
-
-    .mind-thread-info small {
-        color: #94a3b8;
-        font-size: 11px;
-        font-weight: 700;
-        white-space: nowrap;
-    }
-
-    .mind-thread-info p {
-        margin: 0;
-        color: #64748b;
-        font-size: 13px;
-        line-height: 1.35;
-        font-weight: 650;
-        overflow: hidden;
-        white-space: nowrap;
-        text-overflow: ellipsis;
-    }
-
-    .mind-chat-panel {
-        min-width: 0;
-        display: flex;
-        flex-direction: column;
-        background: #f8fafc;
-    }
-
-    .mind-chat-header {
-        min-height: 76px;
-        padding: 14px 18px;
-        background: #ffffff;
-        border-bottom: 1px solid #e5eee9;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-    }
-
-    .mind-chat-user {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        min-width: 0;
-    }
-
-    .mind-chat-user h2 {
-        margin: 0;
-        color: #0f172a;
-        font-size: 18px;
-        line-height: 1.2;
-        font-weight: 900;
-    }
-
-    .mind-chat-user p {
-        margin: 3px 0 0;
-        color: #047857;
-        font-size: 12px;
-        font-weight: 800;
-    }
-
-    .mind-chat-actions {
-        display: flex;
-        gap: 8px;
-    }
-
-    .mind-chat-actions button,
-    .mind-soft-btn {
-        width: 40px;
-        height: 40px;
-        border: none;
-        border-radius: 14px;
-        background: #ecfdf5;
-        color: #065f46;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-    }
-
-    .mind-message-area {
-        flex: 1;
-        min-height: 0;
-        overflow-y: auto;
-        padding: 18px 18px 10px;
-        background:
-            linear-gradient(rgba(255,255,255,0.62), rgba(255,255,255,0.62)),
-            #f8fafc;
-    }
-
-    .mind-day-pill {
-        width: fit-content;
-        margin: 0 auto 16px;
-        padding: 6px 16px;
-        border-radius: 999px;
-        background: #ffffff;
-        color: #94a3b8;
-        font-size: 11px;
-        font-weight: 900;
-        text-transform: uppercase;
-        box-shadow: 0 6px 14px rgba(15, 23, 42, 0.05);
-    }
-
-    .mind-message-list {
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
-    }
-
-    .mind-message {
-        max-width: 78%;
-        display: flex;
-        align-items: flex-start;
-        gap: 10px;
-    }
-
-    .mind-message.own {
-        margin-left: auto;
-        align-items: flex-end;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .mind-mini-avatar {
-        width: 34px;
-        height: 34px;
-        border-radius: 12px;
-        font-size: 13px;
-    }
-
-    .mind-bubble {
-        background: #ffffff;
-        border: 1px solid #e5eee9;
-        color: #334155;
-        border-radius: 18px;
-        border-top-left-radius: 6px;
-        padding: 11px 14px;
-        font-size: 14px;
-        line-height: 1.55;
-        box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
-        word-break: break-word;
-    }
-
-    .own-bubble {
-        background: #d1fae5;
-        border: none;
-        color: #064e3b;
-        border-top-left-radius: 18px;
-        border-top-right-radius: 6px;
-    }
-
-    .mind-message small {
-        margin-top: 4px;
-        color: #94a3b8;
-        font-size: 11px;
-        font-weight: 700;
-        display: block;
-    }
-
-    .mind-input-wrap {
-        padding: 14px 18px;
-        background: #ffffff;
-        border-top: 1px solid #e5eee9;
-    }
-
-    .mind-input-box {
-        min-height: 52px;
-        border: 1px solid #dff7ed;
-        border-radius: 18px;
-        background: #f8fafc;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 6px 8px;
-    }
-
-    .mind-input-box input {
-        flex: 1;
-        min-width: 0;
-        border: none;
-        outline: none;
-        background: transparent;
-        color: #334155;
-        font-size: 14px;
-    }
-
-    .mind-send-btn {
-        width: 40px;
-        height: 40px;
-        border: none;
-        border-radius: 14px;
-        background: #065f46;
-        color: white;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-    }
-
-    .mind-empty-chat,
-    .mind-empty-small {
-        color: #64748b;
-        text-align: center;
-        padding: 24px;
-    }
-
-    .mind-empty-chat.big {
-        margin: auto;
-    }
-
-    .mind-empty-chat span {
-        color: #10b981;
-        font-size: 42px;
-    }
-
-    .mind-empty-chat h3 {
-        color: #064e3b;
-        margin: 8px 0 4px;
-        font-size: 20px;
-        font-weight: 900;
-    }
-
-    .mind-empty-chat p {
-        margin: 0;
-        font-size: 14px;
-    }
-
-    @media (min-width: 900px) and (max-height: 760px) {
-        .mind-chat-page {
-            height: calc(100vh - 88px);
-            padding: 12px 18px;
-        }
-
-        .mind-chat-shell {
-            max-width: 1050px;
-            border-radius: 22px;
-        }
-
-        .mind-thread-head {
-            padding: 18px 18px 12px;
-        }
-
-        .mind-thread-head h1 {
-            font-size: 23px;
-        }
-
-        .mind-search {
-            margin: 12px 18px;
-            height: 43px;
-        }
-
-        .mind-thread {
-            padding: 12px 16px;
-        }
-
-        .mind-chat-header {
-            min-height: 70px;
-        }
-
-        .mind-message-area {
-            padding: 16px 16px 8px;
-        }
-
-        .mind-input-wrap {
-            padding: 12px 16px;
-        }
-    }
-
-    @media (max-width: 900px) {
-        .mind-chat-page {
-            height: calc(100vh - 82px);
-            padding: 12px;
-        }
-
-        .mind-chat-shell {
-            grid-template-columns: 1fr;
-            grid-template-rows: 230px minmax(0, 1fr);
-            border-radius: 20px;
-        }
-
-        .mind-thread-panel {
-            border-right: none;
-            border-bottom: 1px solid #e5eee9;
-        }
-    }
-
-    @media (max-width: 640px) {
-        .mind-chat-page {
-            height: calc(100vh - 74px);
-            padding: 10px;
-        }
-
-        .mind-chat-shell {
-            grid-template-rows: 215px minmax(0, 1fr);
-            border-radius: 18px;
-        }
-
-        .mind-thread-head {
-            padding: 14px;
-        }
-
-        .mind-thread-head h1 {
-            font-size: 21px;
-        }
-
-        .mind-search {
-            height: 42px;
-            margin: 10px 14px;
-        }
-
-        .mind-chat-actions button:nth-child(1),
-        .mind-chat-actions button:nth-child(2),
-        .emoji-btn {
-            display: none;
-        }
-
-        .mind-chat-header {
-            padding: 12px;
-        }
-
-        .mind-message-area {
-            padding: 14px 12px 8px;
-        }
-
-        .mind-message,
-        .mind-message.own {
-            max-width: 92%;
-        }
-
-        .mind-input-wrap {
-            padding: 12px;
-        }
-    }
-</style>
-
-
 <script>
-    const chatForm = document.getElementById("chatForm");
-    const messageInput = document.getElementById("messageInput");
-    const messageArea = document.getElementById("messageArea");
-    const messageList = document.getElementById("messageList");
-    const conversationInput = document.getElementById("conversationId");
-    const searchInput = document.getElementById("searchInput");
-    const threadItems = document.querySelectorAll(".mind-thread");
+(function () {
+    const messagesEl = document.getElementById("chatMessages");
+    const formEl = document.getElementById("chatForm");
+    const inputEl = document.getElementById("chatInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const quickPrompts = document.querySelectorAll(".quick-prompt");
 
-    const currentRole = "{{ role|default:'' }}";
+    function getCSRFToken() {
+        const name = "csrftoken";
+        const cookies = document.cookie.split(";");
 
-    function getCookie(name) {
-        let cookieValue = null;
+        for (let cookie of cookies) {
+            cookie = cookie.trim();
 
-        if (document.cookie && document.cookie !== "") {
-            const cookies = document.cookie.split(";");
-
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-
-                if (cookie.substring(0, name.length + 1) === (name + "=")) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
+            if (cookie.startsWith(name + "=")) {
+                return decodeURIComponent(cookie.substring(name.length + 1));
             }
         }
 
-        return cookieValue;
+        return "";
     }
 
-    function escapeHtml(text) {
-        const div = document.createElement("div");
-        div.innerText = text;
-        return div.innerHTML;
+    function scrollToBottom() {
+        messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
-    function isOwnMessage(senderType) {
-        if (currentRole === "user" && senderType === "user") return true;
-        if (currentRole === "counselor" && senderType === "counselor") return true;
-        if (currentRole === "admin" && senderType === "system") return true;
-        return false;
-    }
-
-    function avatarLetter(senderType) {
-        if (senderType === "ai") return "A";
-        if (senderType === "system") return "M";
-        if (senderType === "counselor") return "C";
-        return "U";
-    }
-
-    function avatarClass(senderType) {
-        if (senderType === "ai") return "ai";
-        if (senderType === "system") return "team";
-        return "counselor";
-    }
-
-    function scrollToBottom(force = false) {
-        if (!messageArea) return;
-
-        const nearBottom =
-            messageArea.scrollHeight - messageArea.scrollTop - messageArea.clientHeight < 140;
-
-        if (force || nearBottom) {
-            messageArea.scrollTop = messageArea.scrollHeight;
-        }
-    }
-
-    function appendMessage(message, own) {
-        if (!messageList) return;
-
+    function addMessage(role, text) {
         const row = document.createElement("div");
+        row.className = "message-row " + role;
 
-        if (own) {
-            row.className = "mind-message own";
-            row.innerHTML = `
-                <div class="mind-bubble own-bubble">${escapeHtml(message.text)}</div>
-                <small>${message.time}</small>
-            `;
-        } else {
-            row.className = "mind-message";
-            row.innerHTML = `
-                <div class="mind-mini-avatar ${avatarClass(message.sender_type)}">${avatarLetter(message.sender_type)}</div>
-                <div>
-                    <div class="mind-bubble">${escapeHtml(message.text)}</div>
-                    <small>${message.time}</small>
-                </div>
-            `;
-        }
+        const bubble = document.createElement("div");
+        bubble.className = "message-bubble";
+        bubble.textContent = text;
 
-        messageList.appendChild(row);
-        scrollToBottom(true);
+        row.appendChild(bubble);
+        messagesEl.appendChild(row);
+        scrollToBottom();
+
+        return row;
     }
 
-    function renderMessages(messages) {
-        if (!messageList) return;
+    function addTyping() {
+        const row = document.createElement("div");
+        row.className = "message-row bot";
+        row.id = "typingRow";
 
-        const shouldStick =
-            messageArea.scrollHeight - messageArea.scrollTop - messageArea.clientHeight < 140;
+        const bubble = document.createElement("div");
+        bubble.className = "message-bubble";
+        bubble.innerHTML = '<span class="typing"><i></i><i></i><i></i></span>';
 
-        messageList.innerHTML = "";
+        row.appendChild(bubble);
+        messagesEl.appendChild(row);
+        scrollToBottom();
 
-        if (!messages.length) {
-            messageList.innerHTML = `
-                <div class="mind-empty-chat">
-                    <span class="material-symbols-outlined">forum</span>
-                    <h3>No messages yet</h3>
-                    <p>Start the conversation below.</p>
-                </div>
-            `;
-            return;
-        }
-
-        messages.forEach((msg) => {
-            const own = isOwnMessage(msg.sender_type);
-
-            if (own) {
-                messageList.innerHTML += `
-                    <div class="mind-message own">
-                        <div class="mind-bubble own-bubble">${escapeHtml(msg.text)}</div>
-                        <small>${msg.time}</small>
-                    </div>
-                `;
-            } else {
-                messageList.innerHTML += `
-                    <div class="mind-message">
-                        <div class="mind-mini-avatar ${avatarClass(msg.sender_type)}">${avatarLetter(msg.sender_type)}</div>
-                        <div>
-                            <div class="mind-bubble">${escapeHtml(msg.text)}</div>
-                            <small>${msg.time}</small>
-                        </div>
-                    </div>
-                `;
-            }
-        });
-
-        if (shouldStick) {
-            scrollToBottom(true);
-        }
+        return row;
     }
 
-    async function pollMessages() {
-        if (!conversationInput || !conversationInput.value) return;
+    function removeTyping() {
+        const row = document.getElementById("typingRow");
+        if (row) row.remove();
+    }
+
+    async function sendMessage(message) {
+        const cleanMessage = message.trim();
+
+        if (!cleanMessage) return;
+
+        addMessage("user", cleanMessage);
+        inputEl.value = "";
+        sendBtn.disabled = true;
+
+        addTyping();
+
+        const formData = new FormData();
+        formData.append("message", cleanMessage);
 
         try {
-            const response = await fetch(`/chat/messages/${conversationInput.value}/`);
+            const response = await fetch("{% url 'chat_api_send' %}", {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": getCSRFToken(),
+                    "X-Requested-With": "XMLHttpRequest"
+                },
+                body: formData
+            });
+
             const data = await response.json();
 
-            if (!response.ok || !data.success) return;
+            removeTyping();
 
-            renderMessages(data.messages);
+            if (!response.ok || !data.ok) {
+                addMessage("bot", data.error || "Chat service failed. Please try again.");
+                return;
+            }
+
+            addMessage("bot", data.reply || "I received your message.");
+
         } catch (error) {
-            console.error("Polling error:", error);
+            removeTyping();
+            addMessage("bot", "Could not connect to chat service. Please check server/API.");
+        } finally {
+            sendBtn.disabled = false;
+            inputEl.focus();
         }
     }
 
-    if (chatForm) {
-        chatForm.addEventListener("submit", async function(event) {
+    formEl.addEventListener("submit", function (event) {
+        event.preventDefault();
+        sendMessage(inputEl.value);
+    });
+
+    inputEl.addEventListener("keydown", function (event) {
+        if (event.key === "Enter" && !event.shiftKey) {
             event.preventDefault();
-
-            const message = messageInput.value.trim();
-            const conversationId = conversationInput.value;
-
-            if (!message) return;
-
-            messageInput.value = "";
-
-            const formData = new FormData();
-            formData.append("conversation_id", conversationId);
-            formData.append("message", message);
-
-            try {
-                const response = await fetch("{% url 'send_message' %}", {
-                    method: "POST",
-                    headers: {
-                        "X-CSRFToken": getCookie("csrftoken")
-                    },
-                    body: formData
-                });
-
-                const data = await response.json();
-
-                if (!response.ok || !data.success) {
-                    throw new Error(data.message || "Message send failed.");
-                }
-
-                appendMessage(data.message, true);
-
-                if (data.ai_reply) {
-                    setTimeout(function() {
-                        appendMessage(data.ai_reply, false);
-                    }, 500);
-                }
-
-            } catch (error) {
-                console.error(error);
-                alert(error.message || "Something went wrong.");
-            }
-        });
-    }
-
-    if (searchInput) {
-        searchInput.addEventListener("input", function() {
-            const query = this.value.toLowerCase().trim();
-
-            threadItems.forEach((item) => {
-                const title = (item.dataset.title || "").toLowerCase();
-                item.style.display = title.includes(query) ? "flex" : "none";
-            });
-        });
-    }
-
-    window.addEventListener("load", function() {
-        scrollToBottom(true);
-
-        if (conversationInput && conversationInput.value) {
-            setInterval(pollMessages, 4000);
+            sendMessage(inputEl.value);
         }
     });
-</script>
 
+    inputEl.addEventListener("input", function () {
+        inputEl.style.height = "auto";
+        inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + "px";
+    });
+
+    quickPrompts.forEach(function (btn) {
+        btn.addEventListener("click", function () {
+            const prompt = btn.dataset.prompt || "";
+            sendMessage(prompt);
+        });
+    });
+})();
+</script>
 {% endblock %}

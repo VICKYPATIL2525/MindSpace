@@ -483,6 +483,20 @@ MODEL_API_KEY = os.environ.get("MODEL_API_KEY", "")
 # Generic fallback key
 API_KEY = os.environ.get("API_KEY", "")
 
+# ============================================================
+# CHATBOT CONFIG
+# ============================================================
+
+CHATBOT_API_URL = os.environ.get(
+    "CHATBOT_API_URL",
+    "http://127.0.0.1:7000/chat"
+)
+
+CHATBOT_API_KEY = os.environ.get(
+    "CHATBOT_API_KEY",
+    ""
+)
+
 
 # ============================================================
 # UPLOAD LIMITS

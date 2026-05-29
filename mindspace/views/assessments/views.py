@@ -10,9 +10,11 @@ This file is intentionally thin:
 import json
 from decimal import Decimal
 
+from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import redirect, render
+from django.urls import NoReverseMatch, reverse
 from django.utils import timezone
 from django.views.decorators.csrf import csrf_protect
 from django.views.decorators.http import require_POST
@@ -26,6 +28,7 @@ from mindspace.models import (
     PhonationSession,
     PlatformScreeningSession,
     ScenarioSession,
+    UserPredictionSummary,
     VideoSession,
 )
 
@@ -184,6 +187,58 @@ def _safe_int(value, default=0):
         return default
 
 
+def safe_reverse_url(*route_names, fallback="/"):
+    """
+    Return first valid URL from route names.
+    Keeps code safe if your URL names change during development.
+    """
+    for route_name in route_names:
+        try:
+            return reverse(route_name)
+        except NoReverseMatch:
+            continue
+    return fallback
+
+
+def _normalize_prediction_label(value):
+    """
+    Normalize latest prediction labels from different APIs/DB formats.
+    """
+    clean = str(value or "").strip().lower()
+    clean = clean.replace("-", "_").replace(" ", "_")
+    return clean
+
+
+def _get_latest_session_summary(user, session):
+    """
+    Get the latest prediction summary only if it belongs to this session.
+    Prevents redirecting based on an old high-risk result.
+    """
+    summary = UserPredictionSummary.objects.filter(user=user).first()
+
+    if not summary:
+        return None
+
+    if getattr(summary, "latest_screening_session_id", None) != session.screening_session_id:
+        return None
+
+    return summary
+
+
+def _should_redirect_to_counselor(user, session):
+    summary = _get_latest_session_summary(user, session)
+
+    if not summary:
+        return False, "", None
+
+    latest_label = _normalize_prediction_label(summary.latest_prediction_label)
+
+    if latest_label == "suicidal_tendency":
+        return True, latest_label, summary
+
+    return False, latest_label, summary
+
+
 # ============================================================
 # PAGE RENDER VIEWS
 # ============================================================
@@ -278,6 +333,24 @@ def activity_complete_view(request):
     session = get_active_screening_session(request)
     fusion = FusionPrediction.objects.filter(screening_session=session).first()
 
+    should_redirect, latest_label, summary = _should_redirect_to_counselor(
+        request.user,
+        session,
+    )
+
+    if should_redirect:
+        messages.warning(
+            request,
+            "Your latest wellness check suggests you may need immediate support. Please review the support options below.",
+        )
+        return redirect(
+            safe_reverse_url(
+                "counselor_support",
+                "counselor",
+                fallback="/counselor/",
+            )
+        )
+
     return render(request, "assessments/activity_complete.html", {
         "session": session,
         "fusion": fusion,
@@ -287,6 +360,13 @@ def activity_complete_view(request):
             "fusion_processing",
             "fusion",
         ],
+        "latest_prediction_label": latest_label,
+        "should_redirect_to_counselor": should_redirect,
+        "counselor_url": safe_reverse_url(
+            "counselor_support",
+            "counselor",
+            fallback="/counselor/",
+        ),
     })
 
 
@@ -811,6 +891,17 @@ def multimodal_session_status(request):
         screening_session=session,
     ).first()
 
+    should_redirect, latest_label, summary = _should_redirect_to_counselor(
+        request.user,
+        session,
+    )
+
+    counselor_url = safe_reverse_url(
+        "counselor_support",
+        "counselor",
+        fallback="/counselor/",
+    )
+
     next_url = ""
     if session.current_activity == "voice_phonation":
         next_url = "/assessments/voice-phonation/"
@@ -843,7 +934,10 @@ def multimodal_session_status(request):
         "fusion_done": bool(fusion),
         "overall_risk": session.overall_risk,
         "final_confidence": fusion.confidence_score if fusion else None,
-        "next_url": next_url,
-        "redirect_url": next_url,
+        "latest_prediction_label": latest_label,
+        "should_redirect_to_counselor": should_redirect,
+        "counselor_url": counselor_url,
+        "next_url": counselor_url if should_redirect else next_url,
+        "redirect_url": counselor_url if should_redirect else next_url,
         "error_message": error_message,
     })

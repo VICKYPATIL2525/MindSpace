@@ -27,7 +27,7 @@
     </a>
 
     <a href="{% url 'counselor_support' %}"
-       class="sidebar-link {% if request.resolver_match.url_name == 'support' %}sidebar-active{% endif %}">
+       class="sidebar-link {% if request.resolver_match.url_name == 'counselor_support' %}sidebar-active{% endif %}">
       <span class="active-bar"></span>
       <span class="material-symbols-outlined icon">psychology</span>
       <span class="label">Counselor</span>
@@ -38,6 +38,13 @@
       <span class="active-bar"></span>
       <span class="material-symbols-outlined icon">directions_run</span>
       <span class="label">Activity</span>
+    </a>
+
+    <a href="{% url 'chat_page' %}"
+       class="sidebar-link {% if request.resolver_match.url_name == 'chat_page' %}sidebar-active{% endif %}">
+      <span class="active-bar"></span>
+      <span class="material-symbols-outlined icon">chat</span>
+      <span class="label">Chat</span>
     </a>
 
   </nav>

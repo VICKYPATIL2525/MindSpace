@@ -362,6 +362,17 @@
         return;
       }
 
+      if (data.should_redirect_to_counselor && data.counselor_url) {
+        badge.textContent = "Support";
+        badge.classList.remove("processing", "failed");
+        title.textContent = "Support Options Are Ready";
+        description.textContent = "Your latest wellness check suggests you may need extra support. You will be redirected to support options now.";
+        statusBox.textContent = "Redirecting to counselor support...";
+        statusBox.className = "status-box";
+        window.location.href = data.counselor_url;
+        return;
+      }
+
       if (data.status === "failed") {
         setFailed(data.error_message || "Final analysis failed. Please check qcluster/server logs.");
         return;
