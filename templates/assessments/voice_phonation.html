@@ -12,7 +12,7 @@
       <div>
         <span class="activity-badge">Activity 2</span>
         <h1>Voice Phonation Activity</h1>
-        <p>Speak the shown Hindi vocal sound clearly. After each good hold, MindSpace saves the sound. After all 7 sounds, it combines them and runs Feature Extraction → PCA → Scoring.</p>
+        <p>Press Start Activity once. MindSpace will automatically capture each Hindi vocal sound, move to the next sound, and run Feature Extraction → PCA → Scoring after all 7 sounds.</p>
       </div>
 
       <div class="score-box">
@@ -47,7 +47,7 @@
         </div>
 
         <div class="status-box" id="statusBox">
-          Press Start Activity to begin.
+          Press Start Activity once. MindSpace will capture all 7 sounds automatically.
         </div>
 
         <div class="pipeline-box">
@@ -112,7 +112,7 @@
 
         <div class="button-row">
           <button type="button" class="btn start" id="startBtn">
-            Start Sound
+            Start Activity
           </button>
 
           <button type="button" class="btn stop" id="stopBtn" disabled>
@@ -757,6 +757,8 @@
   const REQUIRED_HOLD_MS = 1500;
   const VOICE_THRESHOLD = 32;
   const AUTO_SUBMIT_AFTER_HOLD = true;
+  const AUTO_CONTINUE_NEXT_SOUND = true;
+  const NEXT_SOUND_DELAY_MS = 900;
 
   const currentSound = document.getElementById("currentSound");
   const speakPrompt = document.getElementById("speakPrompt");
@@ -1118,6 +1120,9 @@
       completed += 1;
       streak += 1;
       index += 1;
+      isSubmitting = false;
+      autoSubmitPending = false;
+      holdCompleted = false;
 
       const progress = Math.round((completed / soundTasks.length) * 100);
       activityProgress.style.width = `${progress}%`;
@@ -1126,13 +1131,29 @@
 
       if (index >= soundTasks.length) {
         setStatus("All 7 sounds saved. Combining audio and running voice analysis...");
+        isSubmitting = false;
+        autoSubmitPending = false;
+        holdCompleted = false;
         await completeVoicePhonation();
         return;
       }
 
-      setStatus("Sound saved. Next sound ready.");
+      setStatus("Sound saved. Moving to next sound automatically...");
       renderTask();
-      startBtn.disabled = false;
+
+      if (AUTO_CONTINUE_NEXT_SOUND) {
+        startBtn.disabled = true;
+        stopBtn.disabled = true;
+        submitBtn.disabled = true;
+
+        setTimeout(function () {
+          if (index < soundTasks.length && !isSubmitting) {
+            startSound();
+          }
+        }, NEXT_SOUND_DELAY_MS);
+      } else {
+        startBtn.disabled = false;
+      }
 
     } catch (error) {
       streak = 0;
@@ -1220,7 +1241,9 @@
   }
 
   if (startBtn) startBtn.addEventListener("click", startSound);
-  if (stopBtn) stopBtn.addEventListener("click", stopSound);
+  if (stopBtn) stopBtn.addEventListener("click", function () {
+    stopSound(false);
+  });
   if (submitBtn) submitBtn.addEventListener("click", submitSound);
 
   renderTask();
